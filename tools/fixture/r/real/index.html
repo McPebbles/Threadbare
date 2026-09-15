@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  Built from a DOM captured on a real Reddit page with the overlay up
+  (September 2026), scrubbed of the capturing user's identifiers. This is the
+  markup the app actually has to defeat; the userscript-derived fixture in
+  ../privacy/ matched none of it.
+
+  Two things make this fixture faithful rather than decorative:
+
+  1. The stub rpl-dialog / rpl-bottom-sheet below do what Reddit's do: stamp
+     the <template> into a shadow root as a native <dialog> and call
+     showModal(). That puts the dialog in the top layer and makes the rest of
+     the document INERT — which is the "nothing is clickable" the user saw.
+     display:none does not undo that; only close() or removal does.
+
+  2. The overlay does not arrive with the page. Reddit fetches it later from
+     /svc/shreddit/partial/…/activate-experience and slots the response in.
+     The fixture reproduces that with a delayed injection, so the observer —
+     not the document-start stylesheet — is what gets tested.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>r/real</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  .post { padding: 12px; border-bottom: 1px solid #ddd; }
+  configured-xpromo-modal { display: block; }
+</style></head>
+<body>
+<shreddit-app>
+  <header id="site-header"><a href="/r/real/">r/real</a></header>
+  <div class="post" id="post-1"><h3><a id="post-link" href="/r/real/comments/abc/one/">Post one</a></h3></div>
+  <div class="post" id="post-2"><h3><a href="/r/real/comments/def/two/">Post two</a></h3></div>
+  <div class="post" id="post-3"><h3><a href="/r/real/comments/ghi/three/">Post three</a></h3></div>
+  <div style="height:2000px"></div>
+
+  <!-- as shipped: empty until the experience partial is fetched -->
+  <faceplate-partial name="ActivateExperience_Zfxklh"
+      src="/svc/shreddit/partial/Zfxklh/activate-experience?query=%7B%7D"
+      loading="programmatic"></faceplate-partial>
+</shreddit-app>
+
+<script>
+  // Stub of Reddit's rpl-dialog / rpl-bottom-sheet: template -> shadow
+  // <dialog> -> showModal(). Faithful in the one respect that matters.
+  function defineModal(tag) {
+    customElements.define(tag, class extends HTMLElement {
+      connectedCallback() {
+        if (this.shadowRoot) return;
+        var root = this.attachShadow({ mode: 'open' });
+        var tpl = this.querySelector('template');
+        var dlg = document.createElement('dialog');
+        dlg.id = 'live-' + tag;
+        if (tpl) dlg.appendChild(tpl.content.cloneNode(true));
+        root.appendChild(dlg);
+        // Reddit's element carries style="display:none" on the host and still
+        // shows — the visible thing is the top-layer dialog. Reproduce that.
+        this.style.display = 'none';
+        try { dlg.showModal(); } catch (e) {}
+        window.__lastDialog = dlg;
+      }
+    });
+  }
+  defineModal('rpl-dialog');
+  defineModal('rpl-bottom-sheet');
+
+  var APP_MODAL = "<configured-xpromo-modal data-faceplate-tracking-context=\"{}\" actioned=\"\">\n      <rpl-bottom-sheet dialog-id=\"configured-xpromo-mweb3x_feeds_blocking_xpromo_lo_page_fade\" dialog-classname=\"configured-xpromo configured-xpromo-bottom-sheet\" handle-position=\"hidden\" persist-on-reconnect=\"\" blocking=\"\"  style=\"display: none;\" label=\"\" open-state=\"normal\" elevation=\"md\" open=\"\">\n        \n    <template>\n    \n          <rpl-modal-card class=\"bg-transparent\" reverse-buttons=\"\">\n            \n    <div class=\"flex flex-col gap-sm\">\n      <div class=\"flex gap-md\">\n        <img alt=\"Reddit app icon\" width=\"80\" height=\"80\"> <div class=\"flex flex-col gap-xs justify-end pb-2xs\">\n    \n    <div class=\"flex flex-row items-center gap-xs text-caption-1 font-semibold text-neutral-content-weak\">\n      <svg width=\"11\" height=\"24\"></svg>\n      <span class=\"text-center\">\n        Editors\u2019<br>Choice\n      </span>\n      <svg width=\"11\" height=\"24\"></svg>\n    </div>\n   <span class=\"inline-flex gap-2xs h-md\" aria-label=\"average user rating of reddit app out of 5 stars: 4.8\">\n     <span class=\"relative\">\n          <svg width=\"11\" height=\"24\"></svg>\n          <span class=\"absolute inset-0 overflow-hidden w-[100%]\">\n                <svg width=\"11\" height=\"24\"></svg>\n              </span>\n        </span> <span class=\"relative\">\n          <svg width=\"11\" height=\"24\"></svg>\n          <span class=\"absolute inset-0 overflow-hidden w-[100%]\">\n                <svg width=\"11\" height=\"24\"></svg>\n              </span>\n        </span> <span class=\"relative\">\n          <svg width=\"11\" height=\"24\"></svg>\n          <span class=\"absolute inset-0 overflow-hidden w-[100%]\">\n                <svg width=\"11\" height=\"24\"></svg>\n              </span>\n        </span> <span class=\"relative\">\n          <svg width=\"11\" height=\"24\"></svg>\n          <span class=\"absolute inset-0 overflow-hidden w-[100%]\">\n                <svg width=\"11\" height=\"24\"></svg>\n              </span>\n        </span> <span class=\"relative\">\n          <svg width=\"11\" height=\"24\"></svg>\n          <span class=\"absolute inset-0 overflow-hidden w-[80%]\">\n                <svg width=\"11\" height=\"24\"></svg>\n              </span>\n        </span>\n  </span>\n    \n  </div>\n      </div>\n      <div class=\"flex flex-col gap-xs\">\n        <h1 class=\"text-title-1 m-0 text-neutral-content-strong\">Get the best of Reddit in the app</h1>\n        <p class=\"text-body-1 m-0 text-neutral-content-weak\">Personalize your feed, discover more of what you like, and join your favorite communities.</p>\n        \n      </div>\n    </div>\n    \n                \n    <a rpl=\"\" class=\"app-link no-underline hover:no-underline\nbutton-large px-[calc(var(--rem16)-var(--button-border-width,0px))]\nbutton-primarynext\n\n\n\nitems-center justify-center\nbutton inline-flex \" data-testid=\"primary-button\" href=\"https://reddit.onelink.me/MRHZ?deep_link_value=https%3A%2F%2Fwww.reddit.com%2F&amp;af_dp=reddit%3A%2F%2Freddit%2F&amp;base_url=%2F&amp;mweb_loid=REDACTED&amp;mweb_loid=REDACTED&amp;referrer_domain=www.reddit.com&amp;referrer_url=REDACTED&amp;pid=xpromo&amp;c=no_amp_test&amp;af_channel=xpromo&amp;af_keywords=no_amp&amp;af_sub1=mweb3x&amp;af_sub4=page_fade_blocking&amp;af_sub2=page_fade_blocking&amp;action_info_type=global_feeds_30_sec\" rel=\"nofollow\" slot=\"primary-button\"><span class=\"flex items-center justify-center\">\n      \n      <span class=\"flex items-center gap-xs\">Get the Reddit App\n      \n    \n    <ac-manipulate-href nonce=\"pWQi4vs67Bj3vDHgJbq2Eo-n\" once=\"\" payload=\"?$referrer\" target=\"closest([href])\" trigger=\"init\"></ac-manipulate-href>\n    \n    <ac-publish nonce=\"pWQi4vs67Bj3vDHgJbq2Eo-n\" topic=\"trigger_educational_deeplink_prompt\" trigger-elem=\"closest([href])\" trigger=\"click\"></ac-publish>\n  <ac-track nonce=\"pWQi4vs67Bj3vDHgJbq2Eo-n\" data-faceplate-tracking-context=\"{}\" san=\"xpromo|click|page_fade_blocking\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-track></span>\n    </span>\n    </a>\n  \n                \n                \n              \n            <ac-track nonce=\"pWQi4vs67Bj3vDHgJbq2Eo-n\" once=\"\" san=\"xpromo|view|page_fade_blocking\" trigger=\"view\"></ac-track>\n            <ac-gql-mutate nonce=\"pWQi4vs67Bj3vDHgJbq2Eo-n\" once=\"\" operation=\"StoreUxtargetingAction\" trigger=\"view\" variables=\"{&quot;input&quot;:{&quot;action&quot;:&quot;VIEW&quot;,&quot;eligibleExperience&quot;:{&quot;experience&quot;:&quot;STRING_ID_EXPERIENCE&quot;,&quot;experienceName&quot;:&quot;mweb3x_feeds_blocking_xpromo_lo_page_fade&quot;}}}\"></ac-gql-mutate>\n          </rpl-modal-card>\n        \n    </template>\n  \n      </rpl-bottom-sheet>\n\n      \n      \n      \n    <!----></configured-xpromo-modal>";
+  var NSFW_MODAL = "<configured-xpromo-modal data-faceplate-tracking-context=\"{}\" actioned=\"\">\n      <rpl-dialog dialog-id=\"configured-xpromo-bypassable_xpromo_nsfw_bypassable\" dialog-classname=\"configured-xpromo configured-xpromo-modal\" overlay-blur=\"\" persist-on-reconnect=\"\" blocking=\"\"  label=\"\" variant=\"plain\" style=\"display: none;\" open=\"\">\n        \n    <template>\n    \n          <rpl-modal-card class=\"max-w-[calc(100vw-var(--size-2xl))]\" reverse-buttons=\"\">\n            \n            <div slot=\"title-graphic\" class=\"text-category-nsfw w-xl h-xl\">\n                  <svg width=\"11\" height=\"24\"></svg>\n                </div>\n            <h3 slot=\"title\" class=\"m-0\"><span>Mature Content</span></h3>\n            <p class=\"text-neutral-content text-body-2 m-0\">\n                  <span>This page may contain mature or adult content. To continue, log in to your account or confirm you're over 18.</span>\n                </p>\n            <p class=\"text-neutral-content text-body-2 m-0 mt-md\" dir=\"auto\">\n                  By continuing, you also agree that use of this site constitutes acceptance of\n    <a rpl=\"\" class=\" a\n  \n  \n  \n  no-visited\n  no-underline hover:no-underline\n  \n  cursor-pointer\" href=\"https://www.redditinc.com/policies/user-agreement\" target=\"_blank\">Reddit\u2019s User Agreement</a>\n    and acknowledgement of our\n    <a rpl=\"\" class=\" a\n  \n  \n  \n  no-visited\n  no-underline hover:no-underline\n  \n  cursor-pointer\" href=\"https://www.redditinc.com/policies/privacy-policy\" target=\"_blank\">Privacy Policy</a>.\n                </p>\n            \n    <a rpl=\"\" class=\"app-link no-underline hover:no-underline\nbutton-medium px-[calc(var(--rem12)-var(--button-border-width,0px))]\nbutton-primarynext\n\n\n\nitems-center justify-center\nbutton inline-flex \" data-testid=\"primary-button\" href=\"https://reddit.onelink.me/MRHZ?deep_link_value=https%3A%2F%2Fwww.reddit.com%2Fr%2Fsex%2F&amp;af_dp=reddit%3A%2F%2Freddit%2Fr%2Fsex%2F&amp;base_url=%2Fr%2Fsex%2F&amp;mweb_loid=REDACTED&amp;mweb_loid=REDACTED&amp;referrer_domain=www.reddit.com&amp;referrer_url=REDACTED&amp;pid=xpromo&amp;c=no_amp_test&amp;af_channel=xpromo&amp;af_keywords=no_amp&amp;af_sub1=mweb3x&amp;af_sub4=bypassable_xpromo_nsfw_bypassable&amp;af_sub2=bypassable_xpromo_nsfw_bypassable\" rel=\"nofollow\" slot=\"primary-button\"><span class=\"flex items-center justify-center\">\n      \n      <span class=\"flex items-center gap-xs\">Get the Reddit App\n      \n    \n    <ac-manipulate-href nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" payload=\"?$referrer\" target=\"closest([href])\" trigger=\"init\"></ac-manipulate-href>\n    \n    <ac-publish nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" topic=\"trigger_educational_deeplink_prompt\" trigger-elem=\"closest([href])\" trigger=\"click\"></ac-publish>\n  <ac-track nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" data-faceplate-tracking-context=\"{}\" san=\"xpromo|click|bypassable_xpromo_nsfw_bypassable\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-track></span>\n    </span>\n    </a>\n  \n            <button rpl=\"\" class=\"\nbutton-medium px-[calc(var(--rem12)-var(--button-border-width,0px))]\nbutton-bordered\n\n\n\nitems-center justify-center\nbutton inline-flex \" slot=\"secondary-button\">\n      <span class=\"flex items-center justify-center\">\n      \n      <span class=\"flex items-center gap-xs\">\n        Yes, I'm Over 18\n        <ac-set-cookie nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" country=\"CA\" name=\"over18\" options=\"{&quot;expires&quot;:365,&quot;httpOnly&quot;:false}\" value=\"true\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-set-cookie>\n        <ac-track nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" san=\"xpromo|dismiss|bypassable_xpromo_nsfw_bypassable\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-track> <ac-gql-mutate nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" operation=\"StoreUxtargetingAction\" trigger-elem=\"closest(button, a)\" trigger=\"click\" variables=\"{&quot;input&quot;:{&quot;action&quot;:&quot;DISMISS&quot;,&quot;eligibleExperience&quot;:{&quot;experience&quot;:&quot;STRING_ID_EXPERIENCE&quot;,&quot;experienceName&quot;:&quot;bypassable_xpromo_nsfw_bypassable&quot;}}}\" keepalive=\"\"></ac-gql-mutate>\n        <ac-call nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" method=\"location.reload\" target=\"window\" trigger-elem=\"closest(button, a)\" trigger=\"event(ac-load({&quot;operation&quot;:&quot;StoreUxtargetingAction&quot;}))\"></ac-call>\n      </span>\n    </span>\n    \n    </button>\n            <button rpl=\"\" class=\"\nbutton-medium px-[calc(var(--rem12)-var(--button-border-width,0px))]\nbutton-plain\n\n\n\nitems-center justify-center\nbutton inline-flex \" slot=\"tertiary-button\">\n      <span class=\"flex items-center justify-center\">\n      \n      <span class=\"flex items-center gap-xs\">Go to Home<ac-track nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" san=\"xpromo|dismiss|bypassable_xpromo_nsfw_bypassable\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-track><ac-call nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" delay=\"100\" method=\"location.assign(https://www.reddit.com)\" target=\"window\" trigger-elem=\"closest(button, a)\" trigger=\"click\"></ac-call></span>\n    </span>\n    \n    </button>\n            <ac-track nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" san=\"xpromo|view|bypassable_xpromo_nsfw_bypassable\" trigger=\"view\"></ac-track>\n            <ac-gql-mutate nonce=\"pa5ptrAuBLjFcfYf4OiIfiBz\" once=\"\" operation=\"StoreUxtargetingAction\" trigger=\"view\" variables=\"{&quot;input&quot;:{&quot;action&quot;:&quot;VIEW&quot;,&quot;eligibleExperience&quot;:{&quot;experience&quot;:&quot;STRING_ID_EXPERIENCE&quot;,&quot;experienceName&quot;:&quot;bypassable_xpromo_nsfw_bypassable&quot;}}}\"></ac-gql-mutate>\n          </rpl-modal-card>\n        \n    </template>\n  \n      </rpl-dialog>\n\n      \n      \n      \n    <!----></configured-xpromo-modal>";
+
+  // The programmatic partial "arriving". Returns the host it inserted.
+  window.__activateExperience = function (which) {
+    var partial = document.querySelector('faceplate-partial[name^="ActivateExperience"]');
+    var tmp = document.createElement('div');
+    tmp.innerHTML = (which === 'nsfw') ? NSFW_MODAL : APP_MODAL;
+    var host = tmp.firstElementChild;
+    partial.appendChild(host);
+    return host;
+  };
+
+  // Is the page inert right now? A modal dialog in the top layer makes every
+  // other element non-hit-testable and unfocusable.
+  window.__pageInert = function () {
+    var link = document.getElementById('post-link');
+    var r = link.getBoundingClientRect();
+    var hit = document.elementFromPoint(r.left + 5, r.top + 5);
+    var focusable = (function () { try { link.focus(); return document.activeElement === link; } catch (e) { return false; } })();
+    return { hitIsLink: hit === link, focusable: focusable,
+             openDialogs: (function () {
+               var n = 0;
+               (function walk(node) {
+                 var ds = node.querySelectorAll ? node.querySelectorAll('dialog[open]') : [];
+                 n += ds.length;
+                 var all = node.querySelectorAll ? node.querySelectorAll('*') : [];
+                 for (var i = 0; i < all.length; i++) if (all[i].shadowRoot) walk(all[i].shadowRoot);
+               })(document);
+               return n;
+             })() };
+  };
+</script>
+</body></html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="block_mode_entries">
+        <item>Off — block nothing</item>
+        <item>Balanced — Reddit telemetry and trackers</item>
+        <item>Strict — also third-party embeds</item>
+    </string-array>
+    <string-array name="block_mode_values">
+        <item>off</item>
+        <item>balanced</item>
+        <item>strict</item>
+    </string-array>
+
+    <!--
+      The manual escape hatch. xpromo is cross-promotion to the mobile app, so a
+      desktop client should never be offered it — which makes this the thing to
+      reach for if a future Reddit build outruns the suppressor.
+    -->
+    <string-array name="ua_mode_entries">
+        <item>Mobile — Reddit\'s phone layout</item>
+        <item>Desktop — no app prompts, wider layout</item>
+    </string-array>
+    <string-array name="ua_mode_values">
+        <item>mobile</item>
+        <item>desktop</item>
+    </string-array>
+
+    <string-array name="private_tab_entries">
+        <item>Never</item>
+        <item>Ask each time</item>
+        <item>Always, when the browser allows it</item>
+    </string-array>
+    <string-array name="private_tab_values">
+        <item>never</item>
+        <item>ask</item>
+        <item>always</item>
+    </string-array>
+
+    <string-array name="start_page_entries">
+        <item>Front page</item>
+        <item>r/popular</item>
+        <item>r/all</item>
+    </string-array>
+    <string-array name="start_page_values">
+        <item>https://www.reddit.com/</item>
+        <item>https://www.reddit.com/r/popular/</item>
+        <item>https://www.reddit.com/r/all/</item>
+    </string-array>
+</resources>

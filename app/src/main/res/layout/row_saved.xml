@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One saved bookmark. The row shows only the title, as asked; the URL it
+  navigates to is held on the adapter item, not rendered.
+
+  descendantFocusability="blocksDescendants" and focusable="false" on the
+  remove button are not decoration. A focusable child inside a ListView row
+  takes the click, and the row's own onItemClick never fires — which is exactly
+  the "the links don't do anything" report the first version produced. The
+  button still receives its own taps; it just no longer swallows the row's.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:descendantFocusability="blocksDescendants"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingStart="20dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        android:id="@+id/savedTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:paddingEnd="8dp"
+        android:textColor="@color/on_top_bar"
+        android:textSize="16sp" />
+
+    <ImageButton
+        android:id="@+id/savedRemove"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/action_remove_saved"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:padding="12dp"
+        android:src="@drawable/ic_remove"
+        app:tint="@color/hint_text" />
+</LinearLayout>

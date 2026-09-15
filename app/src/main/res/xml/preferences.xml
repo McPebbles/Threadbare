@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/pref_category_reading">
+        <SwitchPreferenceCompat
+            app:key="suppress_xpromo"
+            app:defaultValue="true"
+            app:title="@string/pref_suppress_title"
+            app:summary="@string/pref_suppress_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="block_xpromo_bundles"
+            app:defaultValue="true"
+            app:title="@string/pref_bundles_title"
+            app:summary="@string/pref_bundles_summary" />
+
+        <ListPreference
+            app:key="ua_mode"
+            app:defaultValue="mobile"
+            app:title="@string/pref_ua_title"
+            app:entries="@array/ua_mode_entries"
+            app:entryValues="@array/ua_mode_values"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:key="start_page"
+            app:defaultValue="https://www.reddit.com/"
+            app:title="@string/pref_start_page_title"
+            app:entries="@array/start_page_entries"
+            app:entryValues="@array/start_page_values"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_category_privacy">
+        <SwitchPreferenceCompat
+            app:key="ephemeral_session"
+            app:defaultValue="true"
+            app:title="@string/pref_ephemeral_title"
+            app:summary="@string/pref_ephemeral_summary" />
+
+        <SwitchPreferenceCompat
+            app:key="bypass_age_gate"
+            app:defaultValue="true"
+            app:title="@string/pref_age_gate_title"
+            app:summary="@string/pref_age_gate_summary" />
+
+        <ListPreference
+            app:key="block_mode"
+            app:defaultValue="balanced"
+            app:title="@string/pref_block_mode_title"
+            app:entries="@array/block_mode_entries"
+            app:entryValues="@array/block_mode_values"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:key="private_tab_mode"
+            app:defaultValue="ask"
+            app:title="@string/pref_private_tab_title"
+            app:summary="@string/pref_private_tab_summary"
+            app:entries="@array/private_tab_entries"
+            app:entryValues="@array/private_tab_values" />
+
+        <SwitchPreferenceCompat
+            app:key="open_external_in_browser"
+            app:defaultValue="true"
+            app:title="@string/pref_external_title"
+            app:summary="@string/pref_external_summary" />
+    </PreferenceCategory>
+</PreferenceScreen>

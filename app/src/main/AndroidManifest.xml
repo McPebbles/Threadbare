@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Required to load the site. Nothing else is requested. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+      No location permission at all, unlike the rest of the suite. Reddit has
+      no legitimate need for it in a reader, and WebChromeClient denies every
+      geolocation and media prompt unconditionally, so asking for the permission
+      would only widen the attack surface for something the app refuses anyway.
+
+      No POST_NOTIFICATIONS and no FOREGROUND_SERVICE: push on Android means
+      Firebase Cloud Messaging, which means Google Play services, which is the
+      whole reason this suite exists.
+
+      No READ_MEDIA_* / camera: this is a reader. Posting, uploading and
+      messaging all live on the site, and the site can have the file picker
+      through the normal ACTION_GET_CONTENT route if the user signs in.
+    -->
+
+    <!-- Explicitly refuse the ad ID, in case a future dependency requests it. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!--
+      Needed on API 30+ so external links can be handed to a browser.
+
+      Deliberately absent: any <package> entry for the Reddit app. The app must
+      never be able to resolve an intent to it, which is half of requirement 1.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <data android:mimeType="*/*" />
+        </intent>
+
+        <!--
+          The browsers that will honour a private-tab request from another app,
+          so they can be resolved on API 30+. This is the whole list, kept as
+          narrow as it can be: package visibility is itself information the app
+          can see about the device, and it should see as little as it can.
+
+          Chromium browsers are absent on purpose, not by oversight. Chromium's
+          IntentHandler.isAllowedIncognitoIntent() refuses third-party incognito
+          launches, so naming them here would buy nothing but visibility. See
+          web/PrivateTabs.kt.
+        -->
+        <package android:name="org.mozilla.firefox" />
+        <package android:name="org.mozilla.firefox_beta" />
+        <package android:name="org.mozilla.fenix" />
+        <package android:name="us.spotco.fennec_dos" />
+        <package android:name="org.ironfoxoss.ironfox" />
+        <package android:name="org.torproject.torbrowser" />
+    </queries>
+
+    <application
+        android:name=".App"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:hasFragileUserData="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:memtagMode="async"
+        android:theme="@style/Theme.Threadbare"
+        android:usesCleartextTraffic="false">
+
+        <!--
+          Google Safe Browsing inside WebView phones home to Google with URL
+          hashes. GrapheneOS users generally do not want that, and an app whose
+          entire premise is anonymous reading certainly does not. Nothing
+          replaces it: the app only ever loads a handful of known origins.
+        -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize|uiMode|density|fontScale|layoutDirection|navigation|keyboard|touchscreen"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.Threadbare.Splash">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+              Opt-in link handling. autoVerify is deliberately false: the app
+              does not claim the domain, and claiming someone else's domain in
+              an unofficial client would be the wrong thing to do. If you want
+              shared links to open here, turn it on yourself in
+              Settings > Apps > Threadbare > Open by default.
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="reddit.com" />
+                <data android:scheme="https" android:host="www.reddit.com" />
+                <!-- old.reddit is login-walled as of July 2026; the filter is
+                     kept so a decade of existing links still open here and get
+                     normalised to www rather than hitting the wall. -->
+                <data android:scheme="https" android:host="old.reddit.com" />
+                <data android:scheme="https" android:host="sh.reddit.com" />
+                <data android:scheme="https" android:host="np.reddit.com" />
+                <data android:scheme="https" android:host="redd.it" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.SavedActivity"
+            android:exported="false"
+            android:label="@string/saved_subreddits_title"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Threadbare.Settings" />
+
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="true"
+            android:label="@string/settings_title"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/Theme.Threadbare.Settings">
+            <intent-filter>
+                <action android:name="com.threadbare.client.action.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

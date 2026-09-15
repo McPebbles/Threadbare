@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The frame shape, per claude/frame-rule.md requirement 3.
+
+  A vertical LinearLayout: the full-bleed topBarWrapper first, then the content
+  as a LATER SIBLING with a layout weight. The content being a sibling below an
+  opaque bar is what makes it impossible for it to appear in the status-bar
+  strip — it scrolls under the bar and is clipped. A FrameLayout, or content
+  that is a parent or child of the bar, does not have that property.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_backdrop">
+
+    <LinearLayout
+        android:id="@+id/topBarWrapper"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/top_bar">
+
+        <LinearLayout
+            android:id="@+id/topBarRow"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageButton
+                android:id="@+id/buttonBack"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_back"
+                android:padding="12dp"
+                android:src="@drawable/ic_back"
+                app:tint="@color/on_top_bar" />
+
+            <!--
+              The subreddit box. Deliberately NOT a URL bar.
+
+              The "r/" is a fixed label outside the editable field, and the
+              field itself only ever yields a name that has passed
+              RedditPath.normaliseName — an allowlist of letters, digits and
+              underscore. There is no input a user can produce here that
+              navigates off Reddit, because a host, a scheme and a path all
+              need characters the allowlist does not contain.
+            -->
+            <LinearLayout
+                android:id="@+id/subredditBox"
+                android:layout_width="0dp"
+                android:layout_height="34dp"
+                android:layout_weight="1"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="2dp"
+                android:background="@drawable/subreddit_box"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="4dp">
+
+                <TextView
+                    android:id="@+id/subredditPrefix"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/subreddit_prefix"
+                    android:textColor="@color/hint_text"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:id="@+id/subredditInput"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:ellipsize="end"
+                    android:hint="@string/subreddit_hint"
+                    android:imeOptions="actionGo|flagNoExtractUi"
+                    android:importantForAutofill="no"
+                    android:inputType="text|textNoSuggestions"
+                    android:maxLines="1"
+                    android:paddingStart="1dp"
+                    android:paddingEnd="4dp"
+                    android:singleLine="true"
+                    android:textColor="@color/on_top_bar"
+                    android:textColorHint="@color/hint_text"
+                    android:textSize="15sp"
+                    tools:ignore="TextFields"
+                    tools:text="GrapheneOS" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/buttonOverflow"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_more"
+                android:padding="12dp"
+                android:src="@drawable/ic_overflow"
+                app:tint="@color/on_top_bar" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressTint="@color/accent"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!--
+      Stable FrameLayout host. SwipeRefreshLayout caches its scroll target in
+      ensureTarget() and never re-resolves it, so its children must never be
+      swapped — SupplyChain 1.0.2 shipped a blank pane that way.
+    -->
+    <FrameLayout
+        android:id="@+id/contentHost"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <WebView
+                android:id="@+id/webView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    </FrameLayout>
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_reload" android:title="@string/action_reload" />
+    <item android:id="@+id/action_home" android:title="@string/action_home" />
+
+    <!-- Shown only where they apply; see TopBar.showOverflow. -->
+    <item android:id="@+id/action_save_subreddit" android:title="@string/action_save_subreddit" />
+    <item android:id="@+id/action_save_post" android:title="@string/action_save_post" />
+    <item android:id="@+id/action_saved_subreddits" android:title="@string/action_saved_subreddits" />
+    <item android:id="@+id/action_saved_posts" android:title="@string/action_saved_posts" />
+
+    <item android:id="@+id/action_share" android:title="@string/action_share" />
+    <item android:id="@+id/action_copy_link" android:title="@string/action_copy_link" />
+    <item android:id="@+id/action_open_external" android:title="@string/action_open_external" />
+    <item android:id="@+id/action_sign_in" android:title="@string/action_sign_in" />
+    <item android:id="@+id/action_clear_session" android:title="@string/action_clear_session" />
+    <item android:id="@+id/action_settings" android:title="@string/action_settings" />
+</menu>

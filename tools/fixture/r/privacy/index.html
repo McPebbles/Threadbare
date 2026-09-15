@@ -1,0 +1,145 @@
+<!doctype html>
+<!--
+  A stand-in for a shreddit mobile page with the full xpromo family present.
+
+  Every element and attribute here was taken from the community userscripts that
+  currently remove these overlays (greasyfork 531509, 520603 and 567779, updated
+  June, April and February 2026) — not invented. The point of the fixture is
+  that the suppressor is tested against the shapes Reddit actually ships,
+  including the one that matters most and is easiest to get wrong: the NSFW
+  prompt living inside a shadow root, where an injected stylesheet cannot reach.
+
+  It also carries ordinary content that MUST survive, because a suppressor that
+  removes the page along with the overlay is not a fix.
+-->
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>r/privacy</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  /* The scroll lock, as shipped: a class plus an inline style. */
+  body.rpl-scroll-lock { overflow: hidden; position: fixed; width: 100%; }
+  .post { padding: 12px; border-bottom: 1px solid #ddd; }
+  .thumbnail-blur { filter: blur(24px); }
+  span.inner.blurred { filter: blur(18px); display: block; }
+  .bg-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+  .thumbnail-shadow { position: absolute; inset: 0; box-shadow: inset 0 0 40px #000; }
+  #xpromo-bottom-sheet { position: fixed; bottom: 0; left: 0; right: 0;
+    background: #fff; padding: 24px; z-index: 100; }
+  xpromo-bottom-bar { display: block; position: fixed; bottom: 0; width: 100%;
+    background: #ff4500; color: #fff; padding: 12px; }
+</style></head>
+
+<body class="rpl-scroll-lock" style="overflow: hidden;">
+<shreddit-app>
+
+  <!-- ordinary chrome that must survive -->
+  <header id="site-header"><a href="/r/privacy/">r/privacy</a>
+    <input type="search" placeholder="Search"></header>
+
+  <!-- the app-promotion family, all under paint-group="xpromo" -->
+  <shreddit-async-loader paint-group="xpromo" bundlename="bottom_bar_xpromo">
+    <xpromo-bottom-bar>Open this in the Reddit app</xpromo-bottom-bar>
+  </shreddit-async-loader>
+
+  <shreddit-async-loader paint-group="xpromo" bundlename="app_selector">
+    <xpromo-app-selector>
+      <div id="xpromo-bottom-sheet">
+        <h2>See this post in the app</h2>
+        <button id="primary-button">Open app</button>
+        <button id="secondary-button">Continue in browser</button>
+      </div>
+    </xpromo-app-selector>
+  </shreddit-async-loader>
+
+  <shreddit-async-loader paint-group="xpromo" bundlename="top_button"></shreddit-async-loader>
+
+  <!-- the 18+ wall, which is part of the same system -->
+  <shreddit-async-loader paint-group="xpromo" bundlename="nsfw_blocking_modal">
+    <div id="configured-xpromo-blocking_xpromo_nsfw_blocking" role="dialog">
+      <p>View adult content in the app</p>
+    </div>
+  </shreddit-async-loader>
+  <div id="blocking-modal">Mature content</div>
+  <div id="nsfw-qr-dialog">Scan to open in the app</div>
+
+  <!-- the dimming layer behind a takeover -->
+  <div id="backdrop" style="position: fixed; inset: 0px; backdrop-filter: blur(4px);"></div>
+
+  <!-- legacy markup, still served in places -->
+  <div class="XPromoBottomBar">Get the app</div>
+  <a id="get-app" href="#">Get app</a>
+
+  <!-- content that must survive, some of it blurred -->
+  <div class="post" id="post-1">
+    <h3><a href="/r/privacy/comments/abc/hardening/">Hardening a workstation</a></h3>
+    <pre><code>adb shell pm uninstall --user 0 com.example.package</code></pre>
+  </div>
+  <div class="post" id="post-2">
+    <h3><a href="/r/privacy/comments/def/screenshot/">Settings screenshot</a></h3>
+    <div style="position: relative">
+      <img id="shot" class="thumbnail-blur" alt="screenshot"
+           src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
+      <div class="thumbnail-shadow"></div>
+      <div class="bg-scrim"></div>
+    </div>
+    <span class="inner blurred" id="spoiler">Spoilered text</span>
+    <community-highlight-card blurred id="highlight">Highlighted community</community-highlight-card>
+  </div>
+  <div class="post" id="post-3">
+    <h3><a href="/r/privacy/comments/ghi/third/">A third post</a></h3>
+  </div>
+
+  <!-- Filler. Without a page taller than the viewport, "does it scroll?"
+       passes or fails for reasons that have nothing to do with the lock. -->
+  <div id="filler" style="height: 2000px"></div>
+
+</shreddit-app>
+
+<script>
+  // The NSFW prompt renders into a shadow root — the case an injected
+  // stylesheet provably cannot reach.
+  //
+  // It is built here in script rather than in markup because the suppressor
+  // runs at document-start and removes the static host before the page's own
+  // script gets to attach anything to it. A first version of this fixture did
+  // exactly that, and the result was a test asserting "no .prompt survives in
+  // any shadow root" against a page where no shadow root had ever existed — a
+  // check that could not fail. Built on demand, it is really there when asserted.
+  function makeNsfw(id) {
+    var app = document.querySelector('shreddit-app') || document.body;
+    var host = document.createElement('xpromo-nsfw-blocking-container');
+    if (id) host.id = id;
+    app.appendChild(host);
+    var root = host.attachShadow({ mode: 'open' });
+    root.innerHTML =
+      '<div class="prompt"><h2>This community is 18+</h2>' +
+      '<button>Open in app</button></div>';
+    return host;
+  }
+  window.__makeNsfw = makeNsfw;
+
+  // An unremovable host, to exercise the piercing path specifically. Removing
+  // the host is the suppressor's preferred outcome and supersedes piercing, so
+  // without a host that refuses to be removed, pierceShadow() is never the
+  // thing under test.
+  window.__makeStubbornNsfw = function () {
+    var host = makeNsfw('stubborn');
+    host.remove = function () { throw new Error('refused'); };
+    return host;
+  };
+
+  // A route change injecting a fresh overlay — the case only the observer can
+  // catch, and the reason layer 3 exists at all.
+  window.__injectLate = function () {
+    var loader = document.createElement('shreddit-async-loader');
+    loader.setAttribute('paint-group', 'xpromo');
+    loader.setAttribute('bundlename', 'app_selector');
+    loader.innerHTML = '<div id="late-sheet">Open in app (late)</div>';
+    document.querySelector('shreddit-app').appendChild(loader);
+    makeNsfw('late-nsfw');
+    document.body.classList.add('rpl-scroll-lock');
+    document.body.style.overflow = 'hidden';
+  };
+</script>
+</body></html>

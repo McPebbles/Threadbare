@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Reddit orange. The hue is deliberate — a Reddit client that is not orange
+      reads as broken. The line not to cross is identity, not hue: there is no
+      wordmark, no snoo, no "reddit" in the app id, the label or the icon.
+    -->
+    <color name="accent">#FF4500</color>
+    <color name="on_accent">#FFFFFF</color>
+
+    <!--
+      The main screen's bar is a neutral surface on purpose, not orange: two
+      coloured bars stacked (ours, then the site's own header) read as a
+      rendering bug. Tombot arrived at the same conclusion.
+    -->
+    <color name="top_bar">#FAF9F7</color>
+    <color name="on_top_bar">#1A1815</color>
+    <color name="input_fill">#EFEDE9</color>
+    <color name="hint_text">#6E675E</color>
+    <color name="divider">#E2DED8</color>
+
+    <color name="surface">#FFFFFF</color>
+    <color name="page_backdrop">#FFFFFF</color>
+    <color name="splash_background">#FF4500</color>
+
+    <!-- Launcher icon background. Not repeated in values-night on purpose. -->
+    <color name="ic_launcher_background">#FF4500</color>
+</resources>

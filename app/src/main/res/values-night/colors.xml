@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#FF4500</color>
+    <color name="on_accent">#FFFFFF</color>
+
+    <!-- Warm dark, matched to the skin's dark ground so the seam is invisible. -->
+    <color name="top_bar">#1B1815</color>
+    <color name="on_top_bar">#EDE8E0</color>
+    <color name="input_fill">#25211D</color>
+    <color name="hint_text">#9C948A</color>
+    <color name="divider">#302B25</color>
+
+    <color name="surface">#1B1815</color>
+    <color name="page_backdrop">#14120F</color>
+    <color name="splash_background">#FF4500</color>
+</resources>

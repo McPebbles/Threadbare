@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Threadbare</string>
+    <string name="settings_title">Settings</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_more">More</string>
+    <string name="action_reload">Reload</string>
+    <string name="action_home">Front page</string>
+    <string name="action_share">Share link</string>
+    <string name="action_open_external">Open in browser</string>
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_clear_session">Clear session now</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_copy_link">Copy link</string>
+    <string name="action_save_subreddit">Save this community</string>
+    <string name="action_unsave_subreddit">Remove this community from saved</string>
+    <string name="action_save_post">Save this post</string>
+    <string name="action_unsave_post">Remove this post from saved</string>
+    <string name="action_saved_subreddits">Saved communities\u2026</string>
+    <string name="action_saved_posts">Saved posts\u2026</string>
+    <string name="action_remove_saved">Remove</string>
+    <string name="close">Close</string>
+
+    <string name="subreddit_prefix">r/</string>
+    <string name="subreddit_hint">go to a community</string>
+    <string name="subreddit_bad">Not a community name. Letters, numbers and
+        underscore only.</string>
+
+    <string name="saved_subreddits_title">Saved communities</string>
+    <string name="saved_posts_title">Saved posts</string>
+    <string name="saved_none_subreddits">No saved communities yet. Open one and
+        choose \u201cSave this community\u201d.</string>
+    <string name="saved_none_posts">No saved posts yet. Open one and choose
+        \u201cSave this post\u201d.</string>
+    <string name="saved_added">Saved</string>
+    <string name="saved_removed">Removed from saved</string>
+    <string name="link_copied">Link copied</string>
+
+    <string name="external_title">Open outside Reddit</string>
+    <string name="external_open">Open in browser</string>
+    <string name="external_private">Open in %1$s private tab</string>
+    <string name="external_copy">Copy link</string>
+    <string name="external_no_private">No installed browser lets another app
+        open a private tab. Most Chromium browsers, including Vanadium, refuse
+        this by design; Firefox and its forks allow it.</string>
+    <string name="external_private_unavailable">Opened normally: no installed
+        browser accepts a private-tab request.</string>
+    <string name="external_open_anyway">Open in browser anyway</string>
+    <string name="ad_link_refused">Ad link blocked.</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="app_link_refused">Link to the Reddit app blocked.</string>
+    <string name="external_blocked">External links are turned off in Settings.</string>
+    <string name="no_browser">No browser installed to open this link.</string>
+    <string name="no_share_target">Nothing installed to share to.</string>
+    <string name="session_cleared">Cookies, storage and cache cleared.</string>
+
+    <string name="sign_in_title">Signing in ends anonymity</string>
+    <string name="sign_in_message">This app clears cookies when it closes, so a
+        signed-in session will not survive. Keep the session to stay signed in,
+        or sign in for this run only.</string>
+    <string name="sign_in_keep_session">Keep session</string>
+    <string name="sign_in_anyway">This run only</string>
+
+    <string name="error_title">Could not load the page</string>
+    <string name="error_body">Check your connection and pull down to retry. If
+        this keeps happening on one page, try turning the blocklist down, or
+        turning off bundle blocking, in Settings.</string>
+
+    <!-- Settings -->
+    <string name="pref_category_reading">Reading</string>
+    <string name="pref_category_privacy">Privacy</string>
+    <string name="pref_category_about">About</string>
+
+    <string name="pref_suppress_title">Remove app prompts and the 18+ wall</string>
+    <string name="pref_suppress_summary">Hides Reddit\'s "open in app" takeover
+        and the age wall it uses to push the app, and unblurs the content behind
+        them.</string>
+
+    <string name="pref_bundles_title">Block the prompt code from loading</string>
+    <string name="pref_bundles_summary">Refuses Reddit\'s app-promotion scripts
+        at the network, so the overlays are never built rather than removed
+        afterwards. Turn off if part of the site stops working.</string>
+
+    <string name="pref_ua_title">Site version</string>
+
+    <string name="pref_start_page_title">Start page</string>
+
+    <string name="pref_block_mode_title">Blocking</string>
+
+    <string name="pref_ephemeral_title">Anonymous session</string>
+    <string name="pref_ephemeral_summary">Clear cookies, storage and cache when
+        the app closes. Turning this off is what lets a sign-in persist.</string>
+
+    <string name="pref_age_gate_title">Set Reddit\'s adult-content cookie</string>
+    <string name="pref_age_gate_summary">Best-effort: sets Reddit\'s own
+        preference cookies. Quarantined communities are a different mechanism and
+        still need an account.</string>
+
+    <string name="pref_external_title">Open off-site links in a browser</string>
+    <string name="pref_external_summary">Off keeps every non-Reddit link from
+        leaving the app at all.</string>
+
+    <string name="pref_private_tab_title">Open external links privately</string>
+    <string name="pref_private_tab_summary">Firefox and its forks honour a
+        private-tab request from another app. Chromium browsers, including
+        Vanadium, refuse it — the app will say so rather than open a normal tab
+        and call it private.</string>
+
+    <string name="pref_version_title">Version</string>
+</resources>
