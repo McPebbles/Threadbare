@@ -53,6 +53,16 @@
             app:entryValues="@array/block_mode_values"
             app:useSimpleSummaryProvider="true" />
 
+        <!--
+          Entries are filled in at runtime from the installed browsers; see
+          SettingsFragment.populateBrowsers. Deliberately no app:entries here.
+        -->
+        <ListPreference
+            app:key="link_browser"
+            app:defaultValue=""
+            app:title="@string/pref_link_browser_title"
+            app:summary="@string/pref_link_browser_summary" />
+
         <ListPreference
             app:key="private_tab_mode"
             app:defaultValue="ask"

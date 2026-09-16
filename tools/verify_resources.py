@@ -24,6 +24,9 @@ JAVA = os.path.join(MAIN, "java")
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 APP_NS = "{http://schemas.android.com/apk/res-auto}"
 
+# ListPreferences whose choices come from the device rather than arrays.xml.
+RUNTIME_POPULATED = {"link_browser"}
+
 FAILURES = []
 WARNINGS = []
 
@@ -186,14 +189,36 @@ def check_preferences():
 
     # Every ListPreference's entries and entryValues must be the same length —
     # the suite has hit this before (entries/values array parity).
+    #
+    # A preference whose choices come from the device cannot declare them in
+    # XML, so it is exempt from the arity check — but only in exchange for a
+    # stricter one: the fragment must actually populate it. A ListPreference
+    # with entries from neither source is an empty dialog, which is exactly the
+    # kind of fault that ships because it looks fine in the tree.
+    fragment = os.path.join(JAVA, "com", "threadbare", "client", "ui",
+                            "SettingsFragment.kt")
+    fragment_src = open(fragment, encoding="utf-8").read() if os.path.exists(fragment) else ""
+
     for el in root.iter():
         if not el.tag.endswith("ListPreference"):
             continue
+        key = el.get(APP_NS + "key")
         entries = (el.get(APP_NS + "entries") or "").replace("@array/", "")
         values = (el.get(APP_NS + "entryValues") or "").replace("@array/", "")
+        if not entries and not values:
+            if key in RUNTIME_POPULATED:
+                if ('"%s"' % key) not in fragment_src:
+                    fail("ListPreference %s is declared runtime-populated but "
+                         "SettingsFragment never names it" % key)
+                elif ".entries =" not in fragment_src or ".entryValues =" not in fragment_src:
+                    fail("ListPreference %s is runtime-populated but "
+                         "SettingsFragment sets no entries/entryValues" % key)
+                continue
+            fail("ListPreference %s declares no entries; if that is deliberate, "
+                 "add it to RUNTIME_POPULATED in this script" % key)
+            continue
         if not entries or not values:
-            fail("ListPreference %s is missing entries or entryValues"
-                 % el.get(APP_NS + "key"))
+            fail("ListPreference %s is missing entries or entryValues" % key)
             continue
         counts = {}
         arrays_path = os.path.join(RES, "values", "arrays.xml")
@@ -257,6 +282,8 @@ def check_start_page_hosts():
               for a in arrays_root.findall("string-array")}
     for el in root.iter():
         if not el.tag.endswith("ListPreference"):
+            continue
+        if el.get(APP_NS + "key") in RUNTIME_POPULATED:
             continue
         default = el.get(APP_NS + "defaultValue")
         entry_values = (el.get(APP_NS + "entryValues") or "").replace("@array/", "")

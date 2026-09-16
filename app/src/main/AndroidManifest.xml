@@ -43,6 +43,21 @@
       never be able to resolve an intent to it, which is half of requirement 1.
     -->
     <queries>
+        <!--
+          Browsers. Both schemes and BROWSABLE, because the picker enumerates
+          installed browsers with a scheme-only `http:` probe and the query has
+          to match for them to be visible at all on API 30+.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
@@ -71,6 +86,8 @@
         <package android:name="org.mozilla.firefox_beta" />
         <package android:name="org.mozilla.fenix" />
         <package android:name="us.spotco.fennec_dos" />
+        <package android:name="org.mozilla.focus" />
+        <package android:name="org.mozilla.klar" />
         <package android:name="org.ironfoxoss.ironfox" />
         <package android:name="org.torproject.torbrowser" />
     </queries>

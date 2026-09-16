@@ -47,6 +47,11 @@
     <string name="external_private_unavailable">Opened normally: no installed
         browser accepts a private-tab request.</string>
     <string name="external_open_anyway">Open in browser anyway</string>
+    <string name="external_open_in">Open in %1$s</string>
+    <string name="external_no_private_chosen">%1$s does not let another app open
+        a private tab. Chromium browsers refuse this by design; Firefox and its
+        forks allow it, and Firefox Focus is always private. You can change the
+        browser this app uses in Settings.</string>
     <string name="ad_link_refused">Ad link blocked.</string>
     <string name="cancel">Cancel</string>
 
@@ -102,11 +107,24 @@
     <string name="pref_external_summary">Off keeps every non-Reddit link from
         leaving the app at all.</string>
 
+    <string name="pref_link_browser_title">Browser for external links</string>
+    <string name="pref_link_browser_summary">Which browser this app hands
+        non-Reddit links to. Independent of your system default, so you can keep
+        one browser for everyday use and send links from here somewhere
+        disposable.</string>
+    <string name="pref_link_browser_system">System default</string>
+    <string name="browser_always_private">%1$s — always private</string>
+    <string name="browser_can_private">%1$s — can open private tabs</string>
+    <string name="browser_not_installed">%1$s (no longer installed)</string>
+    <string name="browser_gone">%1$s is no longer installed — using the system
+        default. Pick another in Settings.</string>
+
     <string name="pref_private_tab_title">Open external links privately</string>
-    <string name="pref_private_tab_summary">Firefox and its forks honour a
-        private-tab request from another app. Chromium browsers, including
-        Vanadium, refuse it — the app will say so rather than open a normal tab
-        and call it private.</string>
+    <string name="pref_private_tab_summary">Only applies when the browser above
+        has both modes. Firefox and its forks honour a private-tab request from
+        another app; Chromium browsers, including Vanadium, refuse it, and the
+        app says so rather than opening a normal tab and calling it private. A
+        browser that is always private, like Firefox Focus, never asks.</string>
 
     <string name="pref_version_title">Version</string>
 </resources>

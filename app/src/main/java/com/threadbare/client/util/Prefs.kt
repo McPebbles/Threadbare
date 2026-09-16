@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import com.threadbare.client.privacy.BlockMode
+import com.threadbare.client.web.BrowserChoice
 import com.threadbare.client.web.UrlRules
 
 /**
@@ -34,13 +35,14 @@ object Prefs {
      * 2 — start_page rehomed from old.reddit to www, and the dead keys from the
      *     old.reddit skin removed.
      * 3 — private_tab_mode added.
+     * 4 — link_browser added.
      *
      * Note 3 exists at all only because adding a key with a default is the same
      * schema change as altering one: without the bump, `materialiseDefaults`
      * returns early on every existing install and the new preference is absent
      * rather than defaulted. That is the 1.0.0 bug in its other form.
      */
-    const val SCHEMA_VERSION = 3
+    const val SCHEMA_VERSION = 4
     private const val KEY_SCHEMA = "schema_version"
 
     /** Keys that existed in 1.0.0 and no longer mean anything. */
@@ -55,6 +57,7 @@ object Prefs {
     const val KEY_BYPASS_AGE_GATE = "bypass_age_gate"
     const val KEY_OPEN_EXTERNAL = "open_external_in_browser"
     const val KEY_PRIVATE_TAB = "private_tab_mode"
+    const val KEY_LINK_BROWSER = "link_browser"
 
     const val DEFAULT_START_PAGE = "https://www.reddit.com/"
 
@@ -101,6 +104,9 @@ object Prefs {
             if (!p.contains(KEY_BYPASS_AGE_GATE)) putBoolean(KEY_BYPASS_AGE_GATE, true)
             if (!p.contains(KEY_OPEN_EXTERNAL)) putBoolean(KEY_OPEN_EXTERNAL, true)
             if (!p.contains(KEY_PRIVATE_TAB)) putString(KEY_PRIVATE_TAB, PRIVATE_ASK)
+            if (!p.contains(KEY_LINK_BROWSER)) {
+                putString(KEY_LINK_BROWSER, BrowserChoice.SYSTEM_DEFAULT)
+            }
             putInt(KEY_SCHEMA, SCHEMA_VERSION)
         }.apply()
     }
@@ -174,4 +180,17 @@ object Prefs {
      */
     fun privateTabMode(context: Context): String =
         of(context).getString(KEY_PRIVATE_TAB, PRIVATE_ASK) ?: PRIVATE_ASK
+
+    /**
+     * Which browser gets this app's external links, as a package name, or
+     * [BrowserChoice.SYSTEM_DEFAULT] for "whatever Android would do".
+     *
+     * Separate from the system default on purpose: a reader may well want their
+     * ordinary browser for everything else and a disposable one for links a
+     * Reddit thread happened to point at. Resolution — including the case where
+     * that browser has since been uninstalled — is [BrowserLauncher.chosen].
+     */
+    fun linkBrowser(context: Context): String =
+        of(context).getString(KEY_LINK_BROWSER, BrowserChoice.SYSTEM_DEFAULT)
+            ?: BrowserChoice.SYSTEM_DEFAULT
 }

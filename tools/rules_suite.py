@@ -224,6 +224,12 @@ def main():
           not (set(recipes) & incapable), set(recipes) & incapable)
     check("Vanadium is recorded as incapable, not merely absent",
           "app.vanadium.browser" in incapable)
+    always_private = re.findall(r'Recipe\("([^"]+)",\s*"[^"]*",\s*Basis\.ALWAYS_PRIVATE\)',
+                                open(pt_kt, encoding="utf-8").read())
+    check("every always-private browser really has no ordinary mode",
+          set(always_private) <= {"org.mozilla.focus", "org.mozilla.klar",
+                                  "org.torproject.torbrowser"},
+          always_private)
     check("no Chromium package is declared in <queries>",
           not (declared & incapable), declared & incapable)
 

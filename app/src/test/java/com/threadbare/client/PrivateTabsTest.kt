@@ -48,6 +48,19 @@ class PrivateTabsTest {
         }
     }
 
+    /**
+     * The browser the picker exists to make convenient: no non-private mode to
+     * end up in by accident, which is what makes it a sensible destination for
+     * links a reader did not go looking for.
+     */
+    @Test
+    fun `firefox focus is always private, not merely capable`() {
+        assertEquals(PrivateTabs.Basis.ALWAYS_PRIVATE,
+            PrivateTabs.recipeFor("org.mozilla.focus")!!.basis)
+        assertEquals(PrivateTabs.Basis.ALWAYS_PRIVATE,
+            PrivateTabs.recipeFor("org.mozilla.klar")!!.basis)
+    }
+
     @Test
     fun `tor browser needs no extra because every window is private`() {
         assertEquals(
@@ -69,6 +82,38 @@ class PrivateTabsTest {
         assertEquals(
             "us.spotco.fennec_dos",
             PrivateTabs.choose(installed, "us.spotco.fennec_dos")?.packageName,
+        )
+    }
+
+    /**
+     * Preferences are consulted in the order the user expressed them: the
+     * browser picked for this app beats their system default, which beats the
+     * table's own order.
+     */
+    @Test
+    fun `the browser chosen for this app beats the system default`() {
+        val installed = listOf("org.mozilla.firefox", "org.mozilla.focus")
+        assertEquals(
+            "org.mozilla.focus",
+            PrivateTabs.choose(installed, "org.mozilla.focus", "org.mozilla.firefox")?.packageName,
+        )
+    }
+
+    @Test
+    fun `an incapable app choice falls through to the system default`() {
+        val installed = listOf("org.mozilla.firefox")
+        assertEquals(
+            "org.mozilla.firefox",
+            PrivateTabs.choose(installed, "app.vanadium.browser", "org.mozilla.firefox")?.packageName,
+        )
+    }
+
+    @Test
+    fun `nulls among the preferences are skipped, not treated as a choice`() {
+        val installed = listOf("org.mozilla.firefox")
+        assertEquals(
+            "org.mozilla.firefox",
+            PrivateTabs.choose(installed, null, null)?.packageName,
         )
     }
 

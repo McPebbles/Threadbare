@@ -76,6 +76,13 @@ object PrivateTabs {
         // the intent handling.
         Recipe("us.spotco.fennec_dos", "Mull", Basis.EXTRA),
         Recipe("org.ironfoxoss.ironfox", "IronFox", Basis.EXTRA),
+        // Private throughout, so nothing has to be requested. Focus keeps no
+        // history or cookies between sessions and has an erase control; there
+        // is no non-private mode to end up in by accident, which is what makes
+        // it a good choice for links a reader did not go looking for. Klar is
+        // the same app under its German name.
+        Recipe("org.mozilla.focus", "Firefox Focus", Basis.ALWAYS_PRIVATE),
+        Recipe("org.mozilla.klar", "Firefox Klar", Basis.ALWAYS_PRIVATE),
         Recipe("org.torproject.torbrowser", "Tor Browser", Basis.ALWAYS_PRIVATE),
     )
 
@@ -110,12 +117,15 @@ object PrivateTabs {
     /**
      * Pick a browser to open privately in, from what is installed.
      *
-     * [defaultBrowser] wins when it is capable, so the user's own choice is
-     * respected rather than silently overridden by whatever happens to be first
-     * in the table.
+     * [preferred] is consulted in order before the table's own order, so the
+     * browser the user picked for this app wins over their system default,
+     * which in turn wins over whatever happens to be listed first here. Their
+     * choices are respected in the order they made them.
      */
-    fun choose(installed: Collection<String>, defaultBrowser: String?): Recipe? {
-        recipeFor(defaultBrowser)?.let { if (it.packageName in installed) return it }
+    fun choose(installed: Collection<String>, vararg preferred: String?): Recipe? {
+        for (want in preferred) {
+            recipeFor(want)?.let { if (it.packageName in installed) return it }
+        }
         return RECIPES.firstOrNull { it.packageName in installed }
     }
 

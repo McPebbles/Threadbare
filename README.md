@@ -6,7 +6,7 @@ SupplyChain, Tombot and Spoticap; same toolchain and architecture.
 
 - Package `com.threadbare.client`, minSdk 30, targetSdk 36
 - AGP 8.11.1 / Kotlin 2.1.21 / Gradle 8.14.3
-- versionCode 4 / 1.3.0
+- versionCode 5 / 1.4.0
 - No Play services, no Firebase, no analytics, no background service, no push,
   no `@JavascriptInterface`, and no network request the app makes on its own
 
@@ -70,8 +70,13 @@ the same post reached two ways is one bookmark. Titles come from the page title
 with Reddit's `: r/sub` suffix removed; rows show the title only and carry the
 URL underneath.
 
-**External links leave the app** — where "external" means anything not under
-`reddit.com`. Reddit routes most taps through `applink.reddit.com`, an
+**External links leave the app, in a browser you choose** — where "external"
+means anything not under `reddit.com`. `Settings > Browser for external links`
+lists the installed browsers and is independent of the system default, so
+Vanadium can stay the daily driver while links from here go somewhere
+disposable. Picking a browser that is **always private** — Firefox Focus, Klar,
+Tor Browser — also stops the private-tab prompt appearing at all, since there is
+nothing to request and nothing to opt out of. Reddit routes most taps through `applink.reddit.com`, an
 app-first redirector, and the app-store bounces through `reddit.onelink.me`
 carry the web destination as `deep_link_value`; both are unwrapped and stay in
 the app. Ad clicks (`alb.reddit.com`) are refused. A Never / Ask / Always
@@ -97,7 +102,9 @@ they are protected when they are not. The app therefore:
   them, so a future edit cannot quietly add one;
 - **never falls back from private to normal silently.** `openPrivately` returns
   false rather than downgrading, and the caller says what happened;
-- offers **Copy link** as the escape hatch that always works.
+- offers **Copy link** as the escape hatch that always works, marked
+  `IS_SENSITIVE` so Android 13+ does not put the URL in its clipboard preview —
+  though with a browser picker there is much less reason to reach for it.
 
 *Ephemeral Custom Tabs* (`androidx.browser.customtabs.extra.ENABLE_EPHEMERAL_BROWSING`)
 would cover Chromium and are open to any app. They are not used because androidx
@@ -178,7 +185,7 @@ everything with `tools/verify_all.sh`.
 | `tools/verify_frame.py` | Every `<activity>` satisfies all four requirements of `claude/frame-rule.md`. Validated by running it against a deliberately broken copy reproducing Tombot's settings-screen bug: 6 failures naming the exact causes. |
 | `tools/rules_suite.py` | 73 invariants over the routing, filtering and bundle-blocking tables **parsed out of the Kotlin**, so the data under test is the data that ships. Weighted towards what must *not* be blocked. |
 | `tools/js_suite.py` | 49 behaviour tests in a real Chromium at 412px. Eleven run against markup **captured from a real Reddit page**, with stub components that reproduce `showModal()` inertness; the suite first proves the fixture blocks the page, then that the suppressor makes it clickable again. |
-| `app/src/test/` | JUnit: UrlRules, Blocklist, CookieSeed, SiteScripts, XpromoBlock, PrefsMigration, RedditPath, SavedCodec, PrivateTabs. **Never executed** — the first real check to run. |
+| `app/src/test/` | JUnit: UrlRules, Blocklist, CookieSeed, SiteScripts, XpromoBlock, PrefsMigration, RedditPath, SavedCodec, PrivateTabs, BrowserChoice. **Never executed** — the first real check to run. |
 
 The browser suite proves, specifically: every member of the xpromo family is
 removed including the one inside a shadow root; a page that arrives
@@ -244,6 +251,12 @@ the device can tell you that.
 9. Tap an external link. With Ask, the private option should name a browser if
    you have Firefox or a fork installed, and explain itself if you only have
    Vanadium.
+10. `Settings > Browser for external links`: the list should be browsers only —
+    not every app that claims some https domain — and Focus should be marked
+    "always private". Pick it, then tap an external link: it should open in
+    Focus with no prompt at all.
+11. Uninstall the browser you picked, then tap an external link: you should be
+    told it is gone and get the system default, not silence.
 
 ## When it breaks
 

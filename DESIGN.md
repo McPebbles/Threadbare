@@ -161,6 +161,39 @@ rAF-coalesced, idempotent, no `setInterval`, and it disconnects when
 ten seconds; an observer fires when something changes and costs nothing when
 nothing does, which on a phone is the difference that matters.
 
+## Which browser gets external links
+
+`Settings > Browser for external links`, independent of the system default. The
+case it exists for: Vanadium as the daily driver, Firefox Focus for whatever a
+thread links out to — a disposable session for links the reader did not choose
+and has no relationship with. The alternative was copy, switch app, paste, which
+is tedious and leaves the URL on the clipboard.
+
+Three things worth knowing about how it is built:
+
+**Enumerating browsers uses a scheme-only `http:` probe.** A URI with no host
+cannot match an intent filter that constrains the host, so this separates real
+browsers from every app that claims one domain — including this app's own Reddit
+filter. Without it the picker would offer to send external links to a video app.
+
+**An always-private browser skips the prompt.** Focus, Klar and Tor have no
+ordinary mode: "ask each time" would be a prompt with one answer, and "never
+open privately" cannot make Focus keep history. So choosing one is how a reader
+stops being asked, which is most of the point. The private-tab setting keeps
+applying to browsers that genuinely have both modes.
+
+**A browser that is chosen and then uninstalled is announced, not swallowed.**
+Falling back silently would change behaviour without telling anyone, and if the
+missing browser was private-by-design it would be a silent privacy change.
+`BrowserChoice.resolve` distinguishes "never chose one" from "chose one, it is
+gone" so the caller can say which happened.
+
+The picker labels each browser with what it can actually do — "always private",
+"can open private tabs", or nothing. Those are claims made to someone deciding
+what to trust, so `BrowserChoiceTest` asserts the mapping rather than leaving it
+to be assumed, and "always private" is only ever attached to a browser with no
+ordinary mode at all.
+
 ### The escape hatch
 
 `Settings > Site version > Desktop`. xpromo is cross-promotion to the mobile

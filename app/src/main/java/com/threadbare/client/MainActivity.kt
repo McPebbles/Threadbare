@@ -27,6 +27,7 @@ import com.threadbare.client.util.SavedStore
 import com.threadbare.client.util.Sites
 import com.threadbare.client.ui.SavedActivity
 import com.threadbare.client.web.AppChromeClient
+import com.threadbare.client.web.BrowserChoice
 import com.threadbare.client.web.BrowserLauncher
 import com.threadbare.client.web.PrivateTabs
 import com.threadbare.client.web.RedditPath
@@ -178,15 +179,40 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
             toast(getString(R.string.external_blocked))
             return
         }
+
+        val chosen = BrowserLauncher.chosen(this)
+        // A browser that was picked and then uninstalled is a silent change of
+        // behaviour — and if it was a private-by-design one, a silent privacy
+        // change. Say so once rather than quietly reverting to the default.
+        chosen.stalePackage?.let { toast(getString(R.string.browser_gone, it)) }
+
+        // A browser that is private throughout has nothing to request and
+        // nothing to opt out of: asking would be a prompt with one answer, and
+        // "never open privately" cannot make Focus keep history. Choosing such
+        // a browser is therefore the way to stop being asked at all, which is
+        // most of the point of the picker.
+        if (BrowserChoice.isInherentlyPrivate(chosen.browser)) {
+            openNormally(url, chosen.browser?.packageName)
+            return
+        }
+
         when (Prefs.privateTabMode(this)) {
-            Prefs.PRIVATE_NEVER -> openNormally(url)
-            Prefs.PRIVATE_ALWAYS -> openPrivatelyOrExplain(url)
-            else -> askHowToOpen(url)
+            Prefs.PRIVATE_NEVER -> openNormally(url, chosen.browser?.packageName)
+            Prefs.PRIVATE_ALWAYS -> openPrivatelyOrExplain(url, chosen)
+            else -> askHowToOpen(url, chosen)
         }
     }
 
-    private fun openNormally(url: String) {
-        if (!BrowserLauncher.openNormally(this, url)) toast(getString(R.string.no_browser))
+    /**
+     * @param packageName the browser chosen for this app, or null for the
+     *   system's own choice. A chosen browser that fails to start — uninstalled
+     *   since the picker, or disabled — is retried without the package rather
+     *   than leaving the link nowhere.
+     */
+    private fun openNormally(url: String, packageName: String? = null) {
+        if (BrowserLauncher.openNormally(this, url, packageName)) return
+        if (packageName != null && BrowserLauncher.openNormally(this, url, null)) return
+        toast(getString(R.string.no_browser))
     }
 
     /**
@@ -194,19 +220,31 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
      * in front of the user rather than quietly opening a normal tab. The prompt
      * says why, and "open in browser anyway" is on it.
      */
-    private fun openPrivatelyOrExplain(url: String) {
+    private fun openPrivatelyOrExplain(url: String, chosen: BrowserChoice.Resolution) {
         val recipe = BrowserLauncher.privateOption(this)
         if (recipe != null && BrowserLauncher.openPrivately(this, url, recipe)) return
-        showExternalDialog(url, recipe = null, note = getString(R.string.external_no_private))
+        showExternalDialog(url, chosen, recipe = null, note = noPrivateNote(chosen))
     }
 
-    private fun askHowToOpen(url: String) {
+    private fun askHowToOpen(url: String, chosen: BrowserChoice.Resolution) {
         val recipe = BrowserLauncher.privateOption(this)
         showExternalDialog(
             url,
+            chosen,
             recipe,
-            note = if (recipe == null) getString(R.string.external_no_private) else null,
+            note = if (recipe == null) noPrivateNote(chosen) else null,
         )
+    }
+
+    /**
+     * Why private is unavailable, naming the chosen browser when there is one.
+     * "No browser will do this" and "the browser you picked will not" are
+     * different problems with different fixes, and the second one is fixable
+     * from the picker.
+     */
+    private fun noPrivateNote(chosen: BrowserChoice.Resolution): String {
+        val label = chosen.browser?.label ?: return getString(R.string.external_no_private)
+        return getString(R.string.external_no_private_chosen, label)
     }
 
     /**
@@ -216,7 +254,12 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
      * was available and offered nothing else — the bug reported from the device.
      * Every option here is a real button.
      */
-    private fun showExternalDialog(url: String, recipe: PrivateTabs.Recipe?, note: String?) {
+    private fun showExternalDialog(
+        url: String,
+        chosen: BrowserChoice.Resolution,
+        recipe: PrivateTabs.Recipe?,
+        note: String?,
+    ) {
         val view = layoutInflater.inflate(R.layout.dialog_external, null, false)
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.external_title)
@@ -230,7 +273,10 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
         }
         view.findViewById<android.widget.Button>(R.id.externalOpen).apply {
             setText(if (note != null) R.string.external_open_anyway else R.string.external_open)
-            setOnClickListener { dialog.dismiss(); openNormally(url) }
+            // Name the browser the link is actually going to, so "open in
+            // browser" is not a mystery when it is not the system default.
+            chosen.browser?.let { text = getString(R.string.external_open_in, it.label) }
+            setOnClickListener { dialog.dismiss(); openNormally(url, chosen.browser?.packageName) }
         }
         view.findViewById<android.widget.Button>(R.id.externalPrivate).apply {
             if (recipe != null) {
@@ -239,7 +285,10 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
                 setOnClickListener {
                     dialog.dismiss()
                     if (!BrowserLauncher.openPrivately(this@MainActivity, url, recipe)) {
-                        showExternalDialog(url, null, getString(R.string.external_private_unavailable))
+                        showExternalDialog(
+                            url, chosen, null,
+                            getString(R.string.external_private_unavailable),
+                        )
                     }
                 }
             }
