@@ -102,8 +102,9 @@ object XpromoBlock {
     /**
      * @param host request host, any case
      * @param path request path, any case
+     * @param query request query string, any case; may be null
      */
-    fun decide(host: String?, path: String?): Decision {
+    fun decide(host: String?, path: String?, query: String? = null): Decision {
         val h = host?.lowercase()?.trimEnd('.').orEmpty()
         val p = path?.lowercase().orEmpty()
         if (h.isEmpty() || p.isEmpty()) return Decision(false)
@@ -111,9 +112,21 @@ object XpromoBlock {
 
         // The experience partial: the request whose response is the overlay.
         if (p.contains("/svc/shreddit/partial/")) {
-            val hit = PARTIAL_PATTERNS.firstOrNull { p.contains(it) }
-            if (hit != null) return Decision(true, hit)
-            return Decision(false)
+            val hit = PARTIAL_PATTERNS.firstOrNull { p.contains(it) } ?: return Decision(false)
+            // ...except on a post page, where the response carries the post as
+            // well as the prompt. A diagnostic report from the device settled
+            // this: the gate was revealed, the frame was the right size, and
+            // the media inside it had never arrived. Refusing this endpoint
+            // there means the reader gets a hole where the post should be, and
+            // no client-side work can conjure content that was never sent.
+            //
+            // The page type is in the URL and nowhere else. From three captured
+            // pages: a feed carries `query=` and no params; a subreddit carries
+            // `subredditname`; a post carries `postid`. Anything unrecognised
+            // keeps being refused, so an unfamiliar shape fails the old way
+            // rather than a new one.
+            if (isPostPage(query)) return Decision(false, "post page: $hit allowed")
+            return Decision(true, hit)
         }
 
         // Otherwise only script chunks. Refusing a document or an image by
@@ -124,6 +137,20 @@ object XpromoBlock {
 
         val hit = PATTERNS.firstOrNull { p.contains(it) } ?: return Decision(false)
         return Decision(true, hit)
+    }
+
+    /**
+     * Is this partial request being made from a post page?
+     *
+     * `postId` appears in the signed `params` of a post-detail request and in
+     * no other page type seen. Matched loosely (the params are percent-encoded
+     * inside the query) and case-insensitively, because the encoding is
+     * Reddit's to change and a false negative here only restores the old,
+     * stricter behaviour.
+     */
+    fun isPostPage(query: String?): Boolean {
+        val q = query?.lowercase() ?: return false
+        return q.contains("postid=") || q.contains("postid%3d")
     }
 
     /** Exposed for the verification suite. */

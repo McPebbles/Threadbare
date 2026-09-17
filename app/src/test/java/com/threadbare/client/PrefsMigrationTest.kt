@@ -27,6 +27,19 @@ class PrefsMigrationTest {
             Prefs.SCHEMA_VERSION > 1)
     }
 
+    /**
+     * Schema 5 splits the reveal out of `suppress_xpromo`. Someone who had
+     * turned that switch off — the only way to get a post page back in 1.4.0
+     * and 1.5.0 — must not find the new switch on underneath them, so the new
+     * key inherits rather than defaulting. This asserts the version moved; the
+     * inheritance itself is in `materialiseDefaults` and needs a device.
+     */
+    @Test
+    fun `splitting a setting in two is itself a schema change`() {
+        assertTrue("SCHEMA_VERSION must be >= 5 for the reveal split to reach upgrades",
+            Prefs.SCHEMA_VERSION >= 5)
+    }
+
     @Test
     fun `a start page stored by 1_0_0 is rehomed to www`() {
         assertEquals("https://www.reddit.com/",

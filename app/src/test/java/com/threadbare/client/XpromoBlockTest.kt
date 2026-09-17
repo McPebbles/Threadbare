@@ -120,4 +120,60 @@ class XpromoBlockTest {
             assertTrue("pattern '$p' is suspiciously short", p.length >= 6)
         }
     }
+
+    // ------------------------------------------------- the post-page carve-out
+
+    /**
+     * A device report settled this one: on a post page the experience partial's
+     * response carries the post as well as the wall, so refusing it leaves a
+     * hole where the media should be. The wall on a post page falls to the
+     * observer instead, which no longer removes anything holding content.
+     */
+    @Test
+    fun `the experience partial is allowed on a post page`() {
+        val query = "params=prefix%3Dr%26subreddit%3DUkraineWarVideoReport" +
+            "%26postId%3D14tgoyg%26slug%3Dnsfw_close_quarters&query=%7B%7D"
+        val d = XpromoBlock.decide(
+            "www.reddit.com", "/svc/shreddit/partial/Zfxklh/activate-experience", query,
+        )
+        assertFalse("a post page must keep its media", d.blocked)
+    }
+
+    @Test
+    fun `the experience partial is still refused on a feed and a subreddit`() {
+        val feed = XpromoBlock.decide(
+            "www.reddit.com", "/svc/shreddit/partial/Zfxklh/activate-experience",
+            "query=%7B%22rdt%22%3A%2251510%22%7D",
+        )
+        assertTrue("the 30-second feed takeover is the case layer 1 exists for", feed.blocked)
+
+        val sub = XpromoBlock.decide(
+            "www.reddit.com", "/svc/shreddit/partial/Zfxklh/activate-experience",
+            "params=prefix%3Dr%26subredditName%3Dprivacy%26sig%3Dv1.abc",
+        )
+        assertTrue("an adult-flagged subreddit still gets no wall", sub.blocked)
+    }
+
+    @Test
+    fun `an unrecognisable partial request keeps the old behaviour`() {
+        // Failing towards the previous behaviour rather than towards a new one.
+        for (q in listOf(null, "", "foo=bar")) {
+            assertTrue(
+                "query=$q",
+                XpromoBlock.decide(
+                    "www.reddit.com",
+                    "/svc/shreddit/partial/Zfxklh/activate-experience", q,
+                ).blocked,
+            )
+        }
+    }
+
+    @Test
+    fun `postId is recognised encoded or plain, in any case`() {
+        assertTrue(XpromoBlock.isPostPage("params=postId%3Dabc"))
+        assertTrue(XpromoBlock.isPostPage("POSTID=abc"))
+        assertTrue(XpromoBlock.isPostPage("x=1&postid=abc"))
+        assertFalse(XpromoBlock.isPostPage("subredditName=privacy"))
+        assertFalse(XpromoBlock.isPostPage(null))
+    }
 }

@@ -20,6 +20,8 @@ SRC = os.path.join(ROOT, "app", "src", "main", "java", "com", "threadbare", "cli
 SUBSTITUTIONS = {
     "${jsString(major)}": '"140"',
     "${jsString(css)}": None,  # filled from the real stylesheet
+    "${jsString(id)}": None,   # ditto, per sheet
+    "${acceptAgeGate}": "true",
 }
 
 
@@ -32,8 +34,9 @@ def raw_blocks(path):
     return out
 
 
-def substitute(body, css):
+def substitute(body, css, style_id="tb-suppress"):
     body = body.replace("${jsString(css)}", js_string(css))
+    body = body.replace("${jsString(id)}", js_string(style_id))
     for needle, value in SUBSTITUTIONS.items():
         if value is not None:
             body = body.replace(needle, str(value))
@@ -76,13 +79,18 @@ def main():
     outdir = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "build", "js")
     os.makedirs(outdir, exist_ok=True)
 
-    css_path = os.path.join(ROOT, "app", "src", "main", "assets", "xpromo-suppress.css")
-    css = open(css_path, encoding="utf-8").read()
+    assets = os.path.join(ROOT, "app", "src", "main", "assets")
+    css = open(os.path.join(assets, "xpromo-suppress.css"), encoding="utf-8").read()
+    reveal_css = open(os.path.join(assets, "adult-reveal.css"), encoding="utf-8").read()
 
     wanted = {
         "desktopShim": "desktop_shim.js",
-        "suppressorStyle": "suppressor_style.js",
-        "XPROMO_SUPPRESSOR": "xpromo_suppressor.js",
+        "styleInjector": "suppressor_style.js",
+        "xpromoSuppressor": "xpromo_suppressor.js",
+        "ADULT_REVEALER": "adult_revealer.js",
+        "DIAGNOSTICS_FLAG": "diagnostics_flag.js",
+        "REVEAL_REPORT": "reveal_report.js",
+        "PAGE_DUMP": "page_dump.js",
         "script": "privacy_signals.js",
     }
 
@@ -91,6 +99,11 @@ def main():
         for name, body in raw_blocks(os.path.join(SRC, filename)):
             if name in wanted:
                 found[name] = substitute(body, css)
+                # The injector ships twice, once per stylesheet, and the suite
+                # needs both or the reveal sheet is never under test.
+                if name == "styleInjector":
+                    found["__reveal_style"] = substitute(body, reveal_css, "tb-reveal")
+                    wanted["__reveal_style"] = "reveal_style.js"
 
     missing = set(wanted) - set(found)
     if missing:

@@ -18,6 +18,7 @@ import com.threadbare.client.util.Safely
 object WebViewSetup {
 
     private const val SUPPRESS_ASSET = "xpromo-suppress.css"
+    private const val REVEAL_ASSET = "adult-reveal.css"
 
     /** Origins the document-start scripts are scoped to. Nothing else. */
     private val SCRIPT_ORIGINS = setOf(
@@ -25,8 +26,15 @@ object WebViewSetup {
         "https://sh.reddit.com",
     )
 
-    @Volatile
-    private var cachedCss: String? = null
+    /**
+     * The two stylesheets, read from assets once each.
+     *
+     * A `ConcurrentHashMap` rather than a `@Volatile` field: the reference no
+     * longer changes, only its contents, so volatility would buy nothing —
+     * and `@Volatile` on a `val` does not compile, which is how 1.6.0 failed
+     * to build. `tools/verify_kotlin.py` now rejects that pairing.
+     */
+    private val cachedCss = java.util.concurrent.ConcurrentHashMap<String, String>()
 
     // ------------------------------------------------------------------ UA
 
@@ -61,6 +69,13 @@ object WebViewSetup {
 
     fun configure(view: WebView, context: Context) {
         val s = view.settings
+
+        // Off unless the diagnostics switch is on. It opens this app's WebView
+        // to any debugger that can reach the device over adb, which is the
+        // opposite of what the rest of this file is for — but it is also the
+        // only way to see the page the app actually has, and three releases
+        // have now been spent inferring that from a browser's DOM instead.
+        Safely.run { WebView.setWebContentsDebuggingEnabled(Prefs.diagnostics(context)) }
 
         s.javaScriptEnabled = true
         s.domStorageEnabled = true
@@ -147,17 +162,31 @@ object WebViewSetup {
         Safely.run { cm.flush() }
     }
 
-    /** Clear everything this session left behind, then re-seed. */
+    /**
+     * Clear everything this session left behind, then re-seed.
+     *
+     * `removeAllCookies` is **asynchronous**. Seeding on the next line — which
+     * is what this did until 1.6.0 — is a race the wipe can win, leaving the
+     * app without the `over18` cookie it believes it just set and no way to
+     * tell from the outside. The seeds go in the completion callback.
+     */
     fun clearSession(context: Context, view: WebView?) {
         val cm = CookieManager.getInstance()
-        Safely.run { cm.removeAllCookies(null) }
-        Safely.run { cm.flush() }
+        Safely.run {
+            cm.removeAllCookies {
+                seedCookies(context)
+                Safely.run { cm.flush() }
+            }
+        }
         Safely.run { WebStorage.getInstance().deleteAllData() }
         view?.let {
             Safely.run { it.clearCache(true) }
             Safely.run { it.clearHistory() }
             Safely.run { it.clearFormData() }
         }
+        // Also seeded synchronously: if the callback never arrives the app is
+        // no worse off than before, and if it does the seeds are written twice
+        // with the same values, which costs nothing.
         seedCookies(context)
     }
 
@@ -198,27 +227,40 @@ object WebViewSetup {
             // without this shim still reads as a phone. SupplyChain's lesson.
             out += SiteScripts.desktopShim(major)
         }
+        // First, so the scripts after it can see the flag.
+        if (Prefs.diagnostics(context)) out += SiteScripts.DIAGNOSTICS_FLAG
         out += PrivacySignals.script
         if (Prefs.suppressXpromo(context)) {
-            out += SiteScripts.suppressorStyle(suppressCss(context))
-            out += SiteScripts.XPROMO_SUPPRESSOR
+            out += SiteScripts.styleInjector("tb-suppress", suppressCss(context))
+            out += SiteScripts.xpromoSuppressor(Prefs.bypassAgeGate(context))
+        }
+        // Separate setting, separate script: one removes Reddit's prompts, the
+        // other changes what the reader is shown. Conflating them is how a
+        // blank post page came to be the price of a quiet feed.
+        if (Prefs.revealAdultContent(context)) {
+            out += SiteScripts.styleInjector("tb-reveal", revealCss(context))
+            out += SiteScripts.ADULT_REVEALER
         }
         return out
     }
 
-    fun suppressCss(context: Context): String {
-        cachedCss?.let { return it }
+    fun suppressCss(context: Context): String = asset(context, SUPPRESS_ASSET)
+
+    fun revealCss(context: Context): String = asset(context, REVEAL_ASSET)
+
+    private fun asset(context: Context, name: String): String {
+        cachedCss[name]?.let { return it }
         val css = Safely.call({
-            context.applicationContext.assets.open(SUPPRESS_ASSET).use { stream ->
+            context.applicationContext.assets.open(name).use { stream ->
                 stream.readBytes().toString(Charsets.UTF_8)
             }
         }, "") ?: ""
-        cachedCss = css
+        cachedCss[name] = css
         return css
     }
 
-    /** Drop the cached stylesheet so a settings change takes effect on reload. */
+    /** Drop the cached stylesheets so a settings change takes effect on reload. */
     fun invalidateCssCache() {
-        cachedCss = null
+        cachedCss.clear()
     }
 }

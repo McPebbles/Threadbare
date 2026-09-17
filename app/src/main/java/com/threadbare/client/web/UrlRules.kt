@@ -15,7 +15,7 @@ package com.threadbare.client.web
  * surface that still serves a logged-out reader, so it is the surface this app
  * wraps. The app-promo and 18+ overlays that come with it are dealt with by the
  * three-layer defence in `privacy/XpromoBlock.kt`, the suppression stylesheet
- * and `SiteScripts.XPROMO_SUPPRESSOR` — not here.
+ * and `SiteScripts.xpromoSuppressor` — not here.
  */
 object UrlRules {
 

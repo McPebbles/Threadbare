@@ -169,6 +169,36 @@ def main():
           "/activate-experience" in xp_partials, xp_partials)
     check("no other partial name is refused",
           all("activate-experience" in p for p in xp_partials), xp_partials)
+    # The page-type carve-out, checked against the query strings of three real
+    # captured pages. The device report that forced this showed a post whose
+    # gate had been revealed, whose frame was the right size, and whose media
+    # had never been fetched — because this endpoint had been refused.
+    post_page_rule = re.search(r'fun isPostPage\(query: String\?\): Boolean \{(.*?)\n    \}',
+                               open(os.path.join(PRIVACY, "XpromoBlock.kt"),
+                                    encoding="utf-8").read(), re.S)
+    check("the post-page carve-out exists", post_page_rule is not None)
+    if post_page_rule:
+        body = post_page_rule.group(1)
+
+        def is_post_page(query):
+            """Mirror of the Kotlin, so the suite tests the shipped rule."""
+            q = (query or "").lower()
+            return "postid=" in q or "postid%3d" in q
+
+        check("the mirror matches the shipped tokens",
+              'postid=' in body and 'postid%3d' in body, body.strip()[:120])
+
+        # Captured 2026-09: frontpage, subreddit and post-detail requests.
+        feed = 'query=%7B%22rdt%22%3A%2251510%22%7D'
+        sub = 'params=prefix%3Dr%26subredditName%3Dsex%26sig%3Dv1.h7baNzQ'
+        post = ('params=prefix%3Dr%26subreddit%3DUkraineWarVideoReport'
+                '%26postId%3D14tgoyg%26slug%3Dnsfw_close_quarters')
+        check("a feed's experience partial is still refused", not is_post_page(feed))
+        check("a subreddit's experience partial is still refused", not is_post_page(sub))
+        check("a post's experience partial is allowed through", is_post_page(post))
+        check("an unrecognised shape keeps the old, stricter behaviour",
+              not is_post_page("") and not is_post_page(None) and not is_post_page("foo=bar"))
+
     check("the runtime and vendor chunks are guarded",
           {"runtime", "vendor", "polyfill"} <= xp_never, xp_never)
     check("no guard token is itself a pattern", not (xp_never & xp_patterns))

@@ -1,18 +1,83 @@
 package com.threadbare.client.ui
 
+import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.appcompat.app.AlertDialog
 import androidx.preference.ListPreference
+import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import com.threadbare.client.App
 import com.threadbare.client.R
+import com.threadbare.client.util.Prefs
+import com.threadbare.client.util.RestartGate
 import com.threadbare.client.web.BrowserChoice
 import com.threadbare.client.web.BrowserLauncher
 import com.threadbare.client.web.WebViewSetup
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
+    /** Each gated preference's own summary, so the note can be added and taken away. */
+    private val baseSummaries = HashMap<String, CharSequence?>()
+
+    private val watcher = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (RestartGate.guards(key)) onGatedChange(key!!)
+    }
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, rootKey)
         populateBrowsers()
+        for (key in RestartGate.KEYS) {
+            baseSummaries[key] = findPreference<Preference>(key)?.summary
+        }
+        refreshNotes()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Prefs.of(requireContext()).registerOnSharedPreferenceChangeListener(watcher)
+        refreshNotes()
+    }
+
+    // ------------------------------------------------ settings that need a restart
+
+    /**
+     * Three switches are read when the WebView is built, so toggling one
+     * changes nothing on screen until the app starts again. Saying so is the
+     * whole point: a setting that appears to do nothing is worse than one that
+     * asks for a restart.
+     */
+    private fun onGatedChange(key: String) {
+        refreshNotes()
+        val context = context ?: return
+        val current = Prefs.snapshot(context, RestartGate.KEYS)
+        // Toggled back to what the running app already does — nothing to
+        // restart for, and the note has just been cleared by refreshNotes().
+        if (!RestartGate.isPending(key, App.launchSnapshot, current)) return
+
+        AlertDialog.Builder(context)
+            .setTitle(R.string.restart_title)
+            .setMessage(R.string.restart_message)
+            .setPositiveButton(R.string.restart_now) { _, _ ->
+                activity?.let { AppRestart.restart(it) }
+            }
+            .setNegativeButton(R.string.restart_later, null)
+            .show()
+    }
+
+    /** Add or remove the "not in effect yet" note on each gated preference. */
+    private fun refreshNotes() {
+        val context = context ?: return
+        val current = Prefs.snapshot(context, RestartGate.KEYS)
+        val pending = RestartGate.pending(App.launchSnapshot, current)
+        for (key in RestartGate.KEYS) {
+            val pref = findPreference<Preference>(key) ?: continue
+            val base = baseSummaries[key] ?: pref.summary
+            pref.summary = if (key in pending) {
+                getString(R.string.restart_pending, base ?: "")
+            } else {
+                base
+            }
+        }
     }
 
     /**
@@ -66,6 +131,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onPause() {
         super.onPause()
+        Prefs.of(requireContext()).unregisterOnSharedPreferenceChangeListener(watcher)
         // The stylesheet is cached; drop it so a toggled suppressor is picked
         // up on the next page load.
         WebViewSetup.invalidateCssCache()

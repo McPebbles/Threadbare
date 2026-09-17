@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  The case where the app is simply wrong about what will work.
+
+  A gated container whose revealed child is empty: nothing the revealer does
+  can produce content here. What it must NOT do is leave the reader looking at
+  a blank box with no way to tap through — which is exactly what 1.5.0 shipped,
+  because it hid the button before checking whether the reveal had worked.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<title>r/stubborn</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  .outer { position: relative; height: 200px; }
+  .overlay { position: absolute; inset: 0; display: flex; align-items: center;
+             justify-content: center; z-index: 2; }
+  .inner { display: block; height: 100%; }
+</style></head>
+<body><shreddit-app>
+<shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="" variant="default">
+  <template shadowrootmode="open">
+    <style>
+      .outer { position: relative; height: 200px; overflow: hidden; }
+      .overlay { position: absolute; inset: 0; display: flex; align-items: center;
+                 justify-content: center; z-index: 2; }
+      .inner { display: block; height: 100%; }
+    </style>
+    <div class="outer">
+      <div class="overlay"><button id="reveal-button">View NSFW content</button></div>
+      <span class="inner blurred" style="filter:blur(40px);" aria-hidden="true">
+        <slot name="blurred"></slot>
+      </span>
+    </div>
+  </template>
+  <div slot="blurred"><div style="height:200px;background:#222"></div></div>
+  <!-- present, and empty: the reveal has nothing to give -->
+  <div slot="revealed"></div>
+</shreddit-blurred-container>
+<script>
+  window.__state = function () {
+    const host = document.querySelector('shreddit-blurred-container');
+    const overlays = host.shadowRoot ? [...host.shadowRoot.querySelectorAll('.overlay')] : [];
+    const slot = host.shadowRoot ? host.shadowRoot.querySelector('slot') : null;
+    const placeholder = host.querySelector('[slot="blurred"] div');
+    return {
+      buttonShown: overlays.some(o => getComputedStyle(o).display !== 'none'),
+      slotName: slot ? slot.getAttribute('name') : null,
+      // The real question: is the reader looking at the blurred placeholder
+      // again, or at an empty frame?
+      placeholderHeight: placeholder ? Math.round(placeholder.getBoundingClientRect().height) : 0,
+    };
+  };
+</script>
+</shreddit-app></body></html>

@@ -1,0 +1,180 @@
+<!doctype html>
+<!--
+  The user's own capture, trimmed and scrubbed.
+
+  This is the post-media container and the self-text container lifted verbatim
+  out of a DOM captured on a real Reddit post with the adult flag in force
+  (September 2026), with Reddit's signed media URLs, the capturing user's loid
+  and the correlation ids removed, and the inline scripts dropped. Everything
+  that matters to this app is untouched: the element names, the attributes, the
+  declarative shadow roots, and which slot each one renders.
+
+  NO component definitions are present, so this is the un-hydrated case — the
+  one where pressing the component's own button cannot work, because there is
+  no component. The revealer's DOM fallback is what has to carry this page.
+
+  Its sibling fixture, ../hydrate/, is the other half: a live component with a
+  working button and a lazily-initialised player.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>r/capture</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  /* Stand-ins for the Reddit bundle classes the capture references. */
+  .outer { position: relative; width: 100%; height: 100%; overflow: hidden; }
+  .overlay { position: absolute; inset: 0; display: flex; align-items: center;
+             justify-content: center; z-index: 2; }
+  .inner { display: block; width: 100%; height: 100%; }
+  .bg-scrim { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+              background: rgba(0,0,0,.5); z-index: 1; }
+  .h-full { height: 100%; }
+  shreddit-player, shreddit-async-loader { display: block; height: 100%; }
+</style></head>
+<body><shreddit-app>
+<shreddit-post id="post">
+<div id="t3_14tgoyg-aspect-ratio" class="relative block w-full overflow-hidden " data-aspect-ratio-container="" style="
+    aspect-ratio: 1;
+    min-height: 220px;
+    max-height: max(300px, calc(100vh - calc(var(--shreddit-header-height) + 250px)));
+  ">
+    <div class="absolute inset-0 h-full w-full">
+    <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="" variant="default"><template shadowrootmode="open"><!----> <div class=" outer xs:rounded-t-4 xs:rounded-b-4 h-full "> <!--?lit$484896385$--><div data-ignore-click-interception="" class="overlay"><!--?lit$484896385$--><button rpl="" class="
+button-small px-[calc(var(--rem10)-var(--button-border-width,0px))]
+button-media
+
+
+
+items-center justify-center
+button inline-flex "> <!--?lit$484896385$--><!----><span class="flex items-center justify-center"> <!--?lit$484896385$--> <!--?lit$484896385$--><span class="flex items-center gap-xs"><!--?lit$484896385$-->View NSFW content</span> </span> <!--?lit$484896385$--><!--?--><!----><!----><!----> </button></div> <span aria-live="polite" class=" inner blurred " style="filter:blur(40px);" aria-hidden="true"> <!--?lit$484896385$--> <slot name="blurred"></slot>  </span> <!--?lit$484896385$--><div class="absolute top-0 start-0 w-full h-full bg-scrim"></div> </div> </template>
+      <div slot="blurred" class=""> <div class="h-full w-full object-contain  bg-black  border-none xs:rounded-t-4 relative overflow-hidden">
+       <img alt="" role="presentation" class="absolute top-1/2 -translate-y-1/2 w-full opacity-30 object-cover scale-[1.2] post-background-image-filter" loading="eager" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style=""> 
+    <img id="post-image" alt="r/UkraineWarVideoReport - (NSFW) Close quarters combat in bombed out building." class="max-h-[100vw] h-full w-full object-contain relative" loading="eager" fetchpriority="high" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="">
+  
+    </div>
+    </div>
+      <div slot="revealed" class="nd:h-0 h-full">
+    
+    
+    
+          <activate-feature name="RecommendedMediaOverlay_tt3d9y" activation="programmatic">
+            
+    
+    <shreddit-async-loader bundlename="shreddit_player_loader"><template shadowrootmode="open"><!----> <slot></slot> <slot name="ready"></slot> <slot name="error"></slot> </template>
+      <shreddit-player src="about:blank" class="block h-full w-full max-h-full max-w-full nd:visible" data-post-click-location="video-player" autoplay="" autoplay-pref="" is-mobile="" play-out-of-viewport="" single-playback="" packaged-media-json="{&quot;playbackMp4s&quot;:{&quot;duration&quot;:2,&quot;permutations&quot;:[{&quot;source&quot;:{&quot;dimensions&quot;:{&quot;height&quot;:220,&quot;width&quot;:176},&quot;url&quot;:&quot;about:blank" player-type="post_detail_screen" post-created-at="2023-07-07T19:22:57.237000+0000" post-domain="v.redd.it" post-id="t3_14tgoyg" post-nsfw="" post-score="1501" post-type="video" post-title="(NSFW) Close quarters combat in bombed out building." post-author-id="t2_8yu0mew5c" post-upvote-ratio="0.961441213653603" post-is-archived="" poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" preview="about:blank" subreddit-id="t5_5wjmo8" subreddit-name="UkraineWarVideoReport" preload-threshold="variant_200" priority="auto" muted-autoplay-fallback="" media-codec-cookie-recalc-version="0"><template shadowrootmode="open"><!----> <!--?lit$484896385$--> <!--?lit$484896385$--><video poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="object-fit: contain;"></video> <!--?lit$484896385$--><shreddit-media-ui class="pointer-events-none" autoplay="" autoplaypref="" ismobile="" caption-url="" preview="about:blank" muted="" user-idle="" style="--progress-fill-rate: 0; --volume-fill-rate: 0;"><template shadowrootmode="open"><!----> <slot name="loading-spinner"></slot> <!--?lit$484896385$--> <!--?lit$484896385$--> <button class="min-h-[42px] min-w-[42px] p-0 bg-transparent border-none transition-all pointer-events-auto enabled:cursor-pointer enabled:hover:scale-[1.2] disabled:opacity-60 poster-play-button absolute inset-0 flex items-center justify-center cursor-pointer pointer-events-auto" aria-label="Play"> <!--?lit$484896385$--> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150" fill="currentColor" height="32" icon-name="play-fill" viewBox="0 0 20 20" width="32" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M6.348 1.5c-1.66 0-3.2 1.32-3.2 3.2v10.6c0 1.87 1.54 3.2 3.2 3.2.57 0 1.16-.16 1.7-.5l8.32-5.3c1.97-1.25 1.97-4.13 0-5.39L8.048 2c-.54-.35-1.13-.5-1.7-.5Z"></path><!--?--> </svg>  </button>  <!--?lit$484896385$--><shreddit-caption-overlay class="pointer-events-none absolute start-0 end-0 top-0 bottom-[42px]"><template shadowrootmode="open"><!----><!--?lit$484896385$--><div></div><!--?--></template></shreddit-caption-overlay> <!--?lit$484896385$--> <shreddit-error-overlay class="bg-black flex items-center justify-center absolute inset-0"><template shadowrootmode="open"><!----></template></shreddit-error-overlay>  <!--?lit$484896385$--><slot name="recommendation-overlay"></slot> <!--?lit$484896385$--> <div class="controls absolute inset-0 outline-none" tabindex="-1"> <div class="scrim absolute inset-0 pointer-events-none transition-opacity duration-300"></div> <div dir="ltr" class="control-bar flex items-center justify-between absolute bottom-0 w-full h-[50px] box-border px-2xs pointer-events-auto"> <!--?lit$484896385$--> <div class="disappearing-controls embed-s:justify-between flex items-center w-full h-full transition-opacity duration-300"> <!--?lit$484896385$--> <button class="min-h-[42px] min-w-[42px] p-0 bg-transparent border-none transition-all pointer-events-auto enabled:cursor-pointer enabled:hover:scale-[1.2] disabled:opacity-60 play-pause-button" aria-label="Toggle playback" aria-keyshortcuts="k"> <!--?lit$484896385$--> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden play-icon" fill="currentColor" height="20" icon-name="play-fill" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M6.348 1.5c-1.66 0-3.2 1.32-3.2 3.2v10.6c0 1.87 1.54 3.2 3.2 3.2.57 0 1.16-.16 1.7-.5l8.32-5.3c1.97-1.25 1.97-4.13 0-5.39L8.048 2c-.54-.35-1.13-.5-1.7-.5Z"></path><!--?--> </svg> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden pause-icon" fill="currentColor" height="20" icon-name="pause-fill" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M8.6 5.3a3.3 3.3 0 10-6.6 0v9.4a3.3 3.3 0 006.6 0V5.3ZM18 5.3a3.3 3.3 0 00-6.6 0v9.4a3.3 3.3 0 006.6 0V5.3Z"></path><!--?--> </svg> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden refresh-icon rpl-rtl-icon" fill="currentColor" height="20" icon-name="refresh" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M17.1 10.15a.9.9 0 00-.9.9c0 3.391-2.781 6.15-6.2 6.15s-6.2-2.759-6.2-6.15C3.8 7.659 6.581 4.9 10 4.9h3.878l-.564.564a.9.9 0 101.273 1.272l2.099-2.1a.898.898 0 000-1.272l-2.099-2.1a.9.9 0 10-1.273 1.272l.564.564H10c-4.411 0-8 3.566-8 7.95S5.589 19 10 19s8-3.566 8-7.95a.9.9 0 00-.9-.9Z"></path><!--?--> </svg>  </button>  <!--?lit$484896385$--> <shreddit-progress-bar class="embed-s:hidden relative flex items-center h-full w-full mx-md" tabindex="0" aria-valuemin="0" ismobile="" preview="about:blank" aria-label="Media time"><template shadowrootmode="open"><!----> <shreddit-slider-element class="h-full w-full flex items-center" idleupdate=""><template shadowrootmode="open"><!----> <slot class="touch-none flex w-full h-full items-center justify-center cursor-pointer"></slot> </template> <div class="bg-[--slider-bg] h-2xs w-full relative cursor-pointer"> <div class="progress-fill bg-[--slider-fill] h-full w-full cursor-pointer" style="transform:scaleX(var(--progress-fill-rate));will-change:transform"></div> <div class="slider-ball-positioner absolute inset-0 pointer-events-none"> <div class="slider-ball absolute top-1/2 start-0 w-lg h-lg rounded-full cursor-pointer bg-[--slider-fill] -translate-x-1/2 -translate-y-1/2 scale-75" style="will-change:left"></div> </div> </div> </shreddit-slider-element> <!--?lit$484896385$--> <shreddit-preview-video-lazy class="embed-s:hidden absolute transition-opacity bottom-2xl start-0 -translate-x-1/2 text-center flex-col pointer-events-none" style="left:var(--preview-video-left-px);will-change:left"><template shadowrootmode="open"><!----> <!--?lit$484896385$--> <span class="formatted-current-time m-auto text-14 font-semibold px-2xs bg-black bg-opacity-55 text-white rounded-1 whitespace-nowrap">0:00</span> </template></shreddit-preview-video-lazy>  </template></shreddit-progress-bar>  <!--?lit$484896385$--> <shreddit-current-time class="me-xs"><template shadowrootmode="open"><!----> <span class="whitespace-nowrap font-semibold text-white"> <span><!--?lit$484896385$-->0:00</span><span class="embed-m:hidden"> / <!--?lit$484896385$-->0:00</span> </span> </template></shreddit-current-time>  <!--?lit$484896385$--> <button class="min-h-[42px] min-w-[42px] p-0 bg-transparent border-none transition-all pointer-events-auto enabled:cursor-pointer enabled:hover:scale-[1.2] disabled:opacity-60 embed-s:hidden caption-button" aria-label="Toggle captions" aria-keyshortcuts="c"> <!--?lit$484896385$--> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden caption-enabled-icon" fill="currentColor" height="20" icon-name="closed-caption-fill" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M15.696 3H4.297c-1.819 0-3.3 1.48-3.3 3.3v7.4c0 1.82 1.48 3.301 3.3 3.301h11.4c1.82 0 3.301-1.48 3.301-3.301V6.3c0-1.819-1.48-3.3-3.302-3.3ZM8.521 13.201a3.833 3.833 0 01-1.07.149 3.597 3.597 0 01-1.764-.443 3.386 3.386 0 01-1.277-1.214 3.19 3.19 0 01-.473-1.705c0-.615.155-1.177.464-1.687.31-.51.728-.912 1.256-1.208a3.48 3.48 0 011.726-.443 3.698 3.698 0 012.021.601L8.7 8.792a1.863 1.863 0 00-1.268-.485c-.336 0-.63.076-.883.228a1.553 1.553 0 00-.583.61 1.761 1.761 0 00-.203.837c0 .312.071.598.212.859a1.623 1.623 0 001.451.853c.251 0 .865-.07 1.3-.443l.685 1.572a3.6 3.6 0 01-.889.379v-.001Zm6.541 0a3.833 3.833 0 01-1.07.149 3.597 3.597 0 01-1.764-.443 3.386 3.386 0 01-1.277-1.214 3.19 3.19 0 01-.473-1.705c0-.615.155-1.177.464-1.687.31-.51.728-.912 1.256-1.208a3.48 3.48 0 011.726-.443c.368 0 .726.053 1.074.158.344.104.656.249.936.436.006.004.01.012.005.019l-.699 1.53a1.863 1.863 0 00-1.268-.485c-.336 0-.63.076-.883.228a1.553 1.553 0 00-.583.61 1.761 1.761 0 00-.203.837c0 .312.071.598.212.859a1.623 1.623 0 001.451.853c.25 0 .855-.069 1.288-.434a.01.01 0 01.016.004l.68 1.559a3.6 3.6 0 01-.889.379l.001-.002Z"></path><!--?--> </svg> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden caption-disabled-icon" fill="currentColor" height="20" icon-name="closed-caption" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M6.167 12.777a3.243 3.243 0 01-1.22-1.159 3.054 3.054 0 01-.452-1.629c0-.587.148-1.125.443-1.612a3.22 3.22 0 011.2-1.154A3.311 3.311 0 017.787 6.8a3.505 3.505 0 011.93.574l-.672 1.472a1.784 1.784 0 00-1.212-.464c-.321 0-.602.072-.843.217a1.486 1.486 0 00-.557.583c-.13.244-.194.51-.194.8 0 .298.068.571.203.82s.324.447.565.594c.241.147.515.22.82.22.24 0 .826-.067 1.241-.423l.655 1.501a3.45 3.45 0 01-.849.362 3.68 3.68 0 01-1.023.142 3.432 3.432 0 01-1.684-.423v.002Zm5.809 0a3.243 3.243 0 01-1.22-1.159 3.054 3.054 0 01-.452-1.629c0-.587.148-1.125.443-1.612a3.22 3.22 0 011.2-1.154 3.311 3.311 0 011.649-.423 3.505 3.505 0 011.92.567.014.014 0 01.005.018l-.667 1.461a1.784 1.784 0 00-1.212-.464c-.321 0-.602.072-.843.217a1.486 1.486 0 00-.557.583c-.13.244-.194.51-.194.8 0 .298.068.571.203.82s.324.447.565.594c.241.147.515.22.82.22.238 0 .817-.066 1.231-.415.005-.004.013-.003.015.003l.65 1.489a3.45 3.45 0 01-.849.362 3.648 3.648 0 01-1.023.142 3.432 3.432 0 01-1.684-.423v.003ZM15.7 17H4.3C2.481 17 1 15.52 1 13.7V6.3C1 4.481 2.48 3 4.3 3h11.4C17.519 3 19 4.48 19 6.3v7.4c0 1.819-1.48 3.3-3.3 3.3ZM4.3 4.8c-.827 0-1.499.673-1.499 1.5v7.4c0 .827.672 1.5 1.499 1.5h11.4c.827 0 1.499-.673 1.499-1.5V6.3c0-.827-.672-1.5-1.499-1.5H4.3Z"></path><!--?--> </svg>  </button>  <!--?lit$484896385$--><!--?--> <!--?lit$484896385$--> <button class="min-h-[42px] min-w-[42px] p-0 bg-transparent border-none transition-all pointer-events-auto enabled:cursor-pointer enabled:hover:scale-[1.2] disabled:opacity-60 fullscreen-button " aria-label="Toggle fullscreen" aria-keyshortcuts="f"> <!--?lit$484896385$--> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden expand-icon" fill="currentColor" height="20" icon-name="expand-left" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M9.544 8.272 6.072 4.8h2.82a.9.9 0 000-1.8H3.9a.9.9 0 00-.9.9v4.992a.9.9 0 001.8 0v-2.82l3.472 3.472a.898.898 0 001.272 0 .898.898 0 000-1.272Zm.912 3.456 3.472 3.472h-2.82a.9.9 0 000 1.8H16.1a.9.9 0 00.9-.9v-4.992a.9.9 0 00-1.8 0v2.82l-3.472-3.472a.898.898 0 00-1.272 0 .898.898 0 000 1.272Z"></path><!--?--> </svg> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden collapse-icon" fill="currentColor" height="20" icon-name="collapse-left" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><path d="M9.8 3.908V8.9a.9.9 0 01-.9.9H3.908a.9.9 0 010-1.8h2.82L2.406 3.678a.898.898 0 010-1.272.898.898 0 011.272 0L8 6.728v-2.82a.9.9 0 011.8 0Zm7.794 12.414L13.272 12h2.82a.9.9 0 000-1.8H11.1a.9.9 0 00-.9.9v4.992a.9.9 0 001.8 0v-2.82l4.322 4.322a.898.898 0 001.272 0 .898.898 0 000-1.272Z"></path><!--?--> </svg>  </button>  </div> <!--?lit$484896385$--> <div class="flex items-center h-full"><!--?lit$484896385$--> <shreddit-volume-slider ismobile=""><template shadowrootmode="open"><!----> <div class="relative flex justify-center"> <slot></slot> <!--?lit$484896385$--> </div> </template> <!--?lit$484896385$--> <button class="min-h-[42px] min-w-[42px] p-0 bg-transparent border-none transition-all pointer-events-auto enabled:cursor-pointer enabled:hover:scale-[1.2] disabled:opacity-60 mute-button" aria-label="Toggle volume" aria-keyshortcuts="m"> <!--?lit$484896385$--> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden volume-icon rpl-rtl-icon" fill="currentColor" height="20" icon-name="volume-on-fill" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><g clip-path="url(#a)"><path d="M12.998 15.9v-1.801a4.103 4.103 0 004.1-4.099 4.104 4.104 0 00-4.1-4.099V4.1c3.253 0 5.9 2.647 5.9 5.9 0 3.253-2.647 5.9-5.9 5.9Zm0-7.9v4a2 2 0 100-4ZM9.131 1.5c.91 0 1.757.721 1.757 1.752v13.496c0 1.031-.847 1.752-1.757 1.752-.336 0-.68-.098-.993-.316l-5.88-4.081c-2.866-1.988-2.866-6.219 0-8.207l5.88-4.08c.313-.217.658-.316.993-.316Z"></path></g><defs><clipPath id="a"><path d="M0 0h20v20H0z"></path></clipPath></defs><!--?--> </svg> <!--?lit$484896385$--><svg rpl="" class="text-white ease duration-150 hidden mute-icon rpl-rtl-icon" fill="currentColor" height="20" icon-name="volume-off-fill" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"> <!--?lit$484896385$--><!--?lit$484896385$--><g clip-path="url(#a)"><path d="M19.63 11.863a.9.9 0 11-1.274 1.273l-1.863-1.863-1.863 1.863a.897.897 0 01-1.274 0 .9.9 0 010-1.273L15.22 10l-1.863-1.863a.9.9 0 111.273-1.273l1.863 1.863 1.863-1.863a.9.9 0 111.273 1.273L17.765 10l1.863 1.863h.002ZM9.126 1.5c-.336 0-.68.098-.993.316L2.251 5.897c-2.865 1.988-2.865 6.219 0 8.207l5.881 4.081c.313.217.658.316.993.316.91 0 1.757-.721 1.757-1.752V3.252c0-1.031-.848-1.752-1.757-1.752h.001Z"></path></g><defs><clipPath id="a"><path d="M0 0h20v20H0z"></path></clipPath></defs><!--?--> </svg>  </button>  </shreddit-volume-slider> </div> </div> </div>   </template> <slot name="recommendation-overlay" slot="recommendation-overlay"></slot> <slot name="loading-spinner" slot="loading-spinner"></slot> </shreddit-media-ui> <!--?lit$484896385$--> </template>
+        <source src="about:blank" type="application/vnd.apple.mpegURL">
+        
+    <img alt="media poster" loading="lazy" objectfit="contain" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" class="preview-image h-full w-full ease absolute inset-0 object-contain bg-black" slot="poster">
+
+    
+    <div class="h-full w-full absolute inset-0 flex items-center justify-center opacity-90" slot="loading-spinner">
+      <svg aria-hidden="true" class="w-3xl h-3xl animate-spin" fill="none" viewBox="0 0 120 120">
+        <circle class="opacity-25" cx="60" cy="60" r="54" stroke="white" stroke-width="8"></circle>
+        <circle class="buffering-track-fill opacity-75" cx="60" cy="60" r="54" stroke="white" stroke-width="10" pathLength="100"></circle>
+      </svg>
+      <style>
+        .buffering-track-fill {
+          stroke-dasharray: 100;
+          stroke-dashoffset: 50;
+        }
+      </style>
+    </div>
+  
+         <div slot="recommendation-overlay"> <faceplate-loader name="RecommendedMediaOverlay_tt3d9y" src="concat:about:blank" loading="programmatic" data-prefix="">
+    
+  <!----></faceplate-loader>
+    <faceplate-partial name="RecommendedMediaOverlay_tt3d9y" src="/svc/shreddit/recommended-media-overlay/:postId/:subredditId/:limit/:navigationSessionId/:pageType" loading="programmatic"><template shadowrootmode="open"><!----> <div> <slot></slot> </div> </template>
+      
+      
+    </faceplate-partial>
+  </div> 
+      </shreddit-player>
+      
+    <template slot="error">
+    
+    <div class="bg-black block h-100 overflow-hidden relative">
+      <img alt="Media error" class="blur-[6px] bottom-0 start-0 end-0 top-0 absolute opacity-55 z-0" loading="eager" objectfit="contain" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+      <div class="bottom-0 start-0 end-0 top-0 absolute items-center flex flex-col justify-center z-1">
+        <p dir="auto" class="text-[#fffc] font-[var(--font-title-h4)] max-w-[300px] text-center mt-sm mb-[20px] xs:m-0">
+          Sorry, something went wrong when loading this video.
+        </p>
+        
+    <a rpl="" name="app-link" class="rounded-1 uppercase mt-lg [--button-color-text:var(--color-global-white)] [--button-border-color:var(--color-global-white)] no-underline hover:no-underline visited:no-underline active:no-underline overflow-hidden text-ellipsis whitespace-nowrap button-medium px-[calc(var(--rem12)-var(--button-border-width,0px))] button-bordered items-center justify-center button inline-flex" rel="nofollow" href="https://reddit.onelink.me/MRHZ?deep_link_value=https%3A%2F%2Fwww.reddit.com%2Fr%2FUkraineWarVideoReport%2Fcomments%2F14tgoyg%2Fnsfw_close_quarters_combat_in_bombed_out_building%2F&amp;af_dp=reddit%3A%2F%2Freddit%2Fr%2FUkraineWarVideoReport%2Fcomments%2F14tgoyg%2Fnsfw_close_quarters_combat_in_bombed_out_building%2F&amp;base_url=%2Fr%2FUkraineWarVideoReport%2Fcomments%2F14tgoyg%2Fnsfw_close_quarters_combat_in_bombed_out_building%2F&amp;ob_post_id=t3_14tgoyg&amp;mweb_loid_enc=v1%3ArGdOJ5UF8gUSkgKQA5qY7wqO9jsLPeXu7l_qDVH-Y8v6avfd&amp;mweb_loid_created=1430344963415&amp;referrer_domain=www.reddit.com&amp;referrer_url=%2Fr%2FUkraineWarVideoReport%2Fcomments%2F14tgoyg%2Fnsfw_close_quarters_combat_in_bombed_out_building%2F&amp;pid=xpromo&amp;c=no_amp_test&amp;af_channel=xpromo&amp;af_keywords=no_amp&amp;af_sub1=mweb3x&amp;af_sub4=rmp_fail&amp;af_sub2=rmp_fail">
+      <span class="flex items-center justify-center">
+        <span class="flex items-center gap-xs">
+          View in app
+          
+    
+    <ac-manipulate-href nonce="DFUmTKEj9XBwUWot8KPJGwAq" once="" payload="?$referrer" target="closest([href])" trigger="init"></ac-manipulate-href>
+    
+    <ac-publish nonce="DFUmTKEj9XBwUWot8KPJGwAq" topic="trigger_educational_deeplink_prompt" trigger-elem="closest([href])" trigger="click"></ac-publish>
+  
+          <ac-track nonce="DFUmTKEj9XBwUWot8KPJGwAq" data-faceplate-tracking-context="{&quot;popup&quot;:{&quot;button_text&quot;:&quot;get_app&quot;},&quot;action_info&quot;:{&quot;app_link_provider&quot;:&quot;appsFlyer&quot;}}" san="xpromo|click|rmp_fail" trigger-elem="closest([href])"></ac-track>
+        </span>
+      </span>
+    </a>
+  
+      </div>
+      <ac-track nonce="DFUmTKEj9XBwUWot8KPJGwAq" san="xpromo|view|rmp_fail" trigger="view"></ac-track>
+    </div>
+  
+    </template>
+  
+    </shreddit-async-loader>
+  
+          <!----></activate-feature>
+        
+  </div>
+    </shreddit-blurred-container>
+  </div>
+  </div>
+      <div>
+    
+  </div>
+    </div>
+  
+    
+    <shreddit-post-text-body slot="text-body" post-id="t3_14tgoyg" view-context="CommentsPage" feed-view-type="cardView" subreddit-prefixed-name="r/UkraineWarVideoReport" show-full-content=""><template shadowrootmode="open"><!----><slot name="text-body"></slot></template>
+       <div class="text-neutral-content" slot="text-body">
+    <div class=" px-md mt-xs empty:hidden overflow-hidden" data-post-click-location="text-body">
+      
+    <shreddit-blurred-container mode="wrap" reason="nsfw" is-richtext-content="" embed-obscured="" blurred="" variant="default"><template shadowrootmode="open"><!----> <div class=" outer xs:rounded-t-4 xs:rounded-b-4 h-[88px] "> <!--?lit$484896385$--><div data-ignore-click-interception="" class="overlay"><!--?lit$484896385$--><button rpl="" class="
+button-small px-[calc(var(--rem10)-var(--button-border-width,0px))]
+button-media
+
+
+
+items-center justify-center
+button inline-flex "> <!--?lit$484896385$--><!----><span class="flex items-center justify-center"> <!--?lit$484896385$--> <!--?lit$484896385$--><span class="flex items-center gap-xs"><!--?lit$484896385$-->View NSFW content</span> </span> <!--?lit$484896385$--><!--?--><!----><!----><!----> </button></div> <span aria-live="polite" class=" inner blurred " style="filter:blur(40px);" aria-hidden="true"> <!--?lit$484896385$--> <slot name="revealed"></slot>  </span> <!--?lit$484896385$--><div class="absolute top-0 start-0 w-full h-full bg-scrim"></div> </div> </template>
+      
+      <div slot="revealed" class="nd:h-[88px] h-full"><div id="t3_14tgoyg-post-rtjson-content" class="md text-14-scalable pb-2xs [--emote-size:20px]" about="t3_14tgoyg" property="schema:articleBody" dir="auto">
+      <p>
+      Date and location unknown.
+    </p>
+    </div></div>
+    </shreddit-blurred-container>
+</shreddit-post>
+<div id="comments"><p id="comment-1">An ordinary comment.</p></div>
+</shreddit-app>
+<script>
+  window.__state = function () {
+    const host = document.querySelector('shreddit-blurred-container[mode="slot"]');
+    const child = host && host.querySelector('[slot="revealed"]');
+    const player = document.querySelector('shreddit-player');
+    const inner = host && host.shadowRoot ? host.shadowRoot.querySelector('.inner') : null;
+    const r = player ? player.getBoundingClientRect() : null;
+    return {
+      gated: !!(host && (host.hasAttribute('blurred') || host.hasAttribute('embed-obscured'))),
+      assigned: !!(child && child.assignedSlot),
+      playerHeight: r ? Math.round(r.height) : 0,
+      filter: inner ? getComputedStyle(inner).filter : null,
+      buttonShown: !!(host && host.shadowRoot &&
+        [...host.shadowRoot.querySelectorAll('.overlay')].some(o => getComputedStyle(o).display !== 'none')),
+      textHeight: (() => {
+        const t = document.querySelector('shreddit-blurred-container[mode="wrap"] [slot="revealed"]');
+        return t ? Math.round(t.getBoundingClientRect().height) : 0;
+      })(),
+    };
+  };
+</script>
+</body></html>

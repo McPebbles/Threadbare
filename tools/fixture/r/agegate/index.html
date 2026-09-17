@@ -1,0 +1,106 @@
+<!doctype html>
+<!--
+  The 18+ confirmation, as Reddit actually ships it.
+
+  The button below is the captured one, attributes intact. What it does is the
+  point, and only the first of the four is a cookie:
+
+    <ac-set-cookie name="over18" value="true">
+    <ac-track san="xpromo|dismiss|bypassable_xpromo_nsfw_bypassable">
+    <ac-gql-mutate operation="StoreUxtargetingAction"
+        variables='{"action":"DISMISS", …"experienceName":"bypassable_xpromo_nsfw_bypassable"}'>
+    <ac-call method="location.reload" target="window">
+
+  The mutation is server-side state against the reader's loid, and it is what
+  makes Reddit send an adult-flagged post's media on the next load. Seeding the
+  cookie does not reproduce it — which is why six versions of this app deleted
+  this dialog and then found the post empty, over and over.
+
+  The stubs record what fired instead of doing it, so the suite can assert that
+  the app pressed the button rather than removing it, and that it stops pressing
+  if the page keeps offering it.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<title>r/agegate</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  #frame { background: #000; height: 300px; }
+</style></head>
+<body><shreddit-app>
+  <header id="site-header">r/agegate</header>
+  <shreddit-post id="post"><h1>An adult-flagged post</h1>
+    <div id="frame" slot="post-media-container"></div>
+  </shreddit-post>
+
+<script>
+  window.__fired = { cookie: 0, mutation: 0, reload: 0, track: 0 };
+
+  // Reddit's ac-* elements are declarative actions bound to the nearest button.
+  function action(tag, key) {
+    customElements.define(tag, class extends HTMLElement {
+      connectedCallback() {
+        const host = this.closest('button, a');
+        if (!host || this.dataset.bound) return;
+        this.dataset.bound = '1';
+        host.addEventListener('click', () => { window.__fired[key]++; });
+      }
+    });
+  }
+  action('ac-set-cookie', 'cookie');
+  action('ac-track', 'track');
+  action('ac-gql-mutate', 'mutation');
+  action('ac-call', 'reload');
+
+  customElements.define('rpl-dialog', class extends HTMLElement {
+    connectedCallback() {
+      if (this.shadowRoot) return;
+      const root = this.attachShadow({ mode: 'open' });
+      const dlg = document.createElement('dialog');
+      const tpl = this.querySelector('template');
+      if (tpl) dlg.appendChild(tpl.content.cloneNode(true));
+      root.appendChild(dlg);
+      try { dlg.showModal(); } catch (e) {}
+    }
+  });
+
+  // The experience partial's response, as served on an adult-flagged page.
+  window.__serveWall = function () {
+    const modal = document.createElement('configured-xpromo-modal');
+    modal.setAttribute('dialog-id', 'configured-xpromo-nsfw');
+    modal.innerHTML =
+      '<rpl-dialog blocking open overlay-blur dialog-classname="configured-xpromo nsfw">' +
+      '<template>' +
+      '  <h2>You must be 18+ to view this community</h2>' +
+      '  <a id="get-app" href="https://reddit.onelink.me/MRHZ">Get the Reddit App</a>' +
+      '  <button id="over18-button" rpl class="button-bordered" slot="secondary-button">' +
+      '    <span><span> Yes, I\'m Over 18' +
+      '      <ac-set-cookie country="CA" name="over18" value="true"' +
+      '          options=\'{"expires":365,"httpOnly":false}\'' +
+      '          trigger-elem="closest(button, a)" trigger="click"></ac-set-cookie>' +
+      '      <ac-track once san="xpromo|dismiss|bypassable_xpromo_nsfw_bypassable"' +
+      '          trigger-elem="closest(button, a)" trigger="click"></ac-track>' +
+      '      <ac-gql-mutate once operation="StoreUxtargetingAction"' +
+      '          trigger-elem="closest(button, a)" trigger="click"></ac-gql-mutate>' +
+      '      <ac-call once method="location.reload" target="window"' +
+      '          trigger-elem="closest(button, a)" trigger="click"></ac-call>' +
+      '    </span></span>' +
+      '  </button>' +
+      '</template></rpl-dialog>';
+    document.body.appendChild(modal);
+  };
+
+  window.__state = function () {
+    const modal = document.querySelector('configured-xpromo-modal');
+    let dialogs = 0;
+    for (const el of document.querySelectorAll('*')) {
+      if (el.shadowRoot) for (const d of el.shadowRoot.querySelectorAll('dialog')) if (d.open) dialogs++;
+    }
+    return {
+      fired: window.__fired,
+      modalPresent: !!modal,
+      openDialogs: dialogs,
+      accepted: (() => { try { return sessionStorage.getItem('tb-age-accepted'); } catch (e) { return null; } })(),
+    };
+  };
+</script>
+</shreddit-app></body></html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<!--
+  A post page with adult-flagged content, built from two DOMs the user captured
+  on a real Reddit post (September 2026): the same page blocked, and then
+  unblocked by pressing its own "View NSFW content" button. Scrubbed of the
+  capturing user's identifiers and of Reddit's signed media URLs, which expire.
+
+  The whole point of this fixture is the difference between the two captures:
+
+    blocked    <shreddit-blurred-container mode="slot" reason="nsfw"
+                   embed-obscured blurred variant="default">
+               shadow: .overlay > button "View NSFW content"
+                       span.inner.blurred style="filter:blur(40px)" aria-hidden
+                         <slot name="blurred">
+                       div.bg-scrim
+    unblocked  <shreddit-blurred-container mode="slot" reason="nsfw"
+                   variant="default">
+               shadow: span.inner aria-hidden="false"
+                         <slot name="revealed">
+
+  In mode="slot" the real post is NOT blurred — it is assigned to no slot, so
+  it does not render at all. That is the bug this fixture exists for: a page
+  that reads fine in the feed and comes up empty once opened.
+
+  The shadow roots here are declarative (<template shadowrootmode="open">) and
+  NO custom element is defined, which reproduces the state the app cannot rule
+  out on device: server-rendered markup whose definition has not hydrated, so
+  nothing reacts to an attribute being removed. __defineHydrating() below adds
+  a reactive stub for the other half of that question.
+
+  The shadow stylesheets reproduce what the captured class names do —
+  `absolute top-0 start-0 w-full h-full bg-scrim`, `h-[88px]` — because the
+  real ones ship in a Reddit bundle this fixture cannot have.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>r/post</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  #post { padding: 0 0 12px; }
+  #aspect { position: relative; width: 100%; height: 300px; overflow: hidden; }
+  .cover { position: absolute; inset: 0; width: 100%; height: 100%; }
+</style></head>
+<body>
+<shreddit-app>
+  <header id="site-header"><a href="/r/post/">r/post</a></header>
+
+  <shreddit-post id="post">
+    <h1 id="post-title">A post behind the adult flag</h1>
+
+    <!-- the media: mode="slot", the case no stylesheet can reach -->
+    <div id="aspect">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="" variant="default">
+        <template shadowrootmode="open">
+          <style>
+            .outer { position: relative; width: 100%; height: 100%; overflow: hidden; }
+            .overlay { position: absolute; inset: 0; display: flex; align-items: center;
+                       justify-content: center; z-index: 2; }
+            .inner { display: block; width: 100%; height: 100%; }
+            .bg-scrim { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,.5); z-index: 1; }
+          </style>
+          <div class=" outer xs:rounded-t-4 xs:rounded-b-4 h-full ">
+            <div data-ignore-click-interception="" class="overlay">
+              <button id="reveal-button" rpl="" class=" button-small button-media items-center justify-center button inline-flex ">
+                <span class="flex items-center justify-center"><span class="flex items-center gap-xs">View NSFW content</span></span>
+              </button>
+            </div>
+            <span aria-live="polite" class=" inner blurred " style="filter:blur(40px);" aria-hidden="true">
+              <slot name="blurred"></slot>
+            </span>
+            <div class="absolute top-0 start-0 w-full h-full bg-scrim"></div>
+          </div>
+        </template>
+
+        <div slot="blurred" class="">
+          <div class="cover" style="background:#222">
+            <img id="placeholder" alt="" role="presentation" class="cover"
+                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+          </div>
+        </div>
+
+        <div slot="revealed" class="nd:h-0 h-full">
+          <div id="post-media" class="cover" style="background:#0a7">the post</div>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+
+    <!-- the self-text: mode="wrap", blurred in place and clamped to 88px -->
+    <div class="text-neutral-content">
+      <shreddit-blurred-container mode="wrap" reason="nsfw" is-richtext-content="" embed-obscured="" blurred="" variant="default">
+        <template shadowrootmode="open">
+          <style>
+            .outer { position: relative; overflow: hidden; }
+            .h-\[88px\] { height: 88px; }
+            .overlay { position: absolute; inset: 0; display: flex; align-items: center;
+                       justify-content: center; z-index: 2; }
+            .inner { display: block; }
+            .bg-scrim { position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,.5); z-index: 1; }
+          </style>
+          <div class=" outer xs:rounded-t-4 xs:rounded-b-4 h-[88px] ">
+            <div data-ignore-click-interception="" class="overlay">
+              <button rpl="" class=" button-small button-media button inline-flex ">
+                <span class="flex items-center gap-xs">View NSFW content</span>
+              </button>
+            </div>
+            <span aria-live="polite" class=" inner blurred " style="filter:blur(40px);" aria-hidden="true">
+              <slot name="revealed"></slot>
+            </span>
+            <div class="absolute top-0 start-0 w-full h-full bg-scrim"></div>
+          </div>
+        </template>
+
+        <div slot="revealed" class="nd:h-[88px] h-full">
+          <div id="post-text" class="md text-14-scalable">
+            <p>Line one of the self-text.</p>
+            <p style="height:120px">A body long enough that an 88px clamp would cut it.</p>
+          </div>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+
+    <!-- a spoiler blur: the poster's doing, not the age gate. Must survive. -->
+    <shreddit-blurred-container mode="wrap" reason="spoiler" blurred="" variant="default">
+      <template shadowrootmode="open">
+        <style>.inner { display: block; }</style>
+        <div class="outer">
+          <span aria-live="polite" class=" inner blurred " style="filter:blur(40px);" aria-hidden="true">
+            <slot name="revealed"></slot>
+          </span>
+        </div>
+      </template>
+      <div slot="revealed"><p id="spoiler-text">Who dies at the end.</p></div>
+    </shreddit-blurred-container>
+  </shreddit-post>
+
+  <div id="comments"><p id="comment-1">An ordinary comment.</p></div>
+</shreddit-app>
+
+<script>
+  // What the reader actually gets: is the real post assigned to a rendered
+  // slot, does it occupy space, is it unblurred, and is it the thing under
+  // the finger rather than a button on top of it?
+  function stateOf(id) {
+    var el = document.getElementById(id);
+    if (!el) return { present: false };
+    var box = el.getBoundingClientRect();
+    var host = el.closest('shreddit-blurred-container');
+    var slotted = el.closest('[slot]');
+    var filter = '';
+    var node = el;
+    // The blur is applied inside the shadow root, so walk the composed path
+    // rather than the DOM ancestors.
+    var span = host && host.shadowRoot ? host.shadowRoot.querySelector('.inner') : null;
+    if (span) filter = getComputedStyle(span).filter;
+    // What is under the finger. Probed at the host's centre as well as the
+    // target's own, because a withheld post has no box of its own to probe —
+    // which is the whole symptom.
+    function at(rect) {
+      if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+      var x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      var hit = document.elementFromPoint(x, y);
+      // elementFromPoint returns the host for anything inside a shadow root.
+      if (hit === host && host.shadowRoot) hit = host.shadowRoot.elementFromPoint(x, y);
+      if (!hit) return null;
+      // Report the tap target rather than whichever span inside it the point
+      // happened to land on.
+      var target = hit.closest ? hit.closest('button, .overlay') : null;
+      if (target) return target.id || target.className;
+      return hit.id || hit.className;
+    }
+    var topmost = at(box);
+    var hostTopmost = host ? at(host.getBoundingClientRect()) : null;
+    return {
+      present: true,
+      assigned: !!(slotted && slotted.assignedSlot),
+      height: Math.round(box.height),
+      filter: filter,
+      topmost: topmost,
+      hostTopmost: hostTopmost,
+      hostBlurred: !!(host && (host.hasAttribute('blurred') || host.hasAttribute('embed-obscured')))
+    };
+  }
+  window.__mediaState = function () { return stateOf('post-media'); };
+  window.__textState = function () { return stateOf('post-text'); };
+  window.__spoilerState = function () { return stateOf('spoiler-text'); };
+
+  // The other half of the question the app cannot answer on device: what
+  // happens when the definition DOES arrive and re-renders from its own
+  // attributes. A reactive stub, deliberately minimal.
+  window.__defineHydrating = function () {
+    if (customElements.get('shreddit-blurred-container')) return;
+    customElements.define('shreddit-blurred-container', class extends HTMLElement {
+      static get observedAttributes() { return ['blurred', 'embed-obscured']; }
+      connectedCallback() { this.render(); }
+      attributeChangedCallback() { this.render(); }
+      render() {
+        var root = this.shadowRoot || this.attachShadow({ mode: 'open' });
+        var blurred = this.hasAttribute('blurred') || this.hasAttribute('embed-obscured');
+        var name = (this.getAttribute('mode') === 'slot' && blurred) ? 'blurred' : 'revealed';
+        root.innerHTML =
+          '<style>.outer{position:relative;overflow:hidden}.inner{display:block;height:100%}' +
+          '.h-full{height:100%}.h-\\[88px\\]{height:88px}' +
+          '.overlay{position:absolute;inset:0;z-index:2}</style>' +
+          '<div class="outer ' + (blurred ? 'h-[88px]' : 'h-full') + '">' +
+          (blurred ? '<div class="overlay"><button>View NSFW content</button></div>' : '') +
+          '<span class="inner' + (blurred ? ' blurred' : '') + '"' +
+          (blurred ? ' style="filter:blur(40px)" aria-hidden="true"' : ' aria-hidden="false"') +
+          '><slot name="' + name + '"></slot></span></div>';
+      }
+    });
+  };
+
+  // A container that arrives after load, as it does on an SPA route change.
+  window.__injectLateBlurred = function () {
+    var host = document.createElement('shreddit-blurred-container');
+    host.setAttribute('mode', 'slot');
+    host.setAttribute('reason', 'nsfw');
+    host.setAttribute('embed-obscured', '');
+    host.setAttribute('blurred', '');
+    var revealed = document.createElement('div');
+    revealed.setAttribute('slot', 'revealed');
+    revealed.innerHTML = '<div id="late-media" style="height:80px;background:#0a7">late post</div>';
+    var blurredChild = document.createElement('div');
+    blurredChild.setAttribute('slot', 'blurred');
+    blurredChild.innerHTML = '<div style="height:80px;background:#222"></div>';
+    host.appendChild(blurredChild);
+    host.appendChild(revealed);
+    if (!customElements.get('shreddit-blurred-container')) {
+      var root = host.attachShadow({ mode: 'open' });
+      root.innerHTML =
+        '<style>.inner{display:block}</style>' +
+        '<div class="outer"><div class="overlay"><button>View NSFW content</button></div>' +
+        '<span class="inner blurred" style="filter:blur(40px)" aria-hidden="true">' +
+        '<slot name="blurred"></slot></span></div>';
+    }
+    document.getElementById('comments').appendChild(host);
+  };
+</script>
+</body></html>

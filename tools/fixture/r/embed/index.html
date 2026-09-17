@@ -1,0 +1,213 @@
+<!doctype html>
+<!--
+  A third-party embed behind the adult flag, as the device reported it (1.8.1):
+
+    <shreddit-embed providername="hgifs" data-embed-obscured-deferred
+        html='<iframe src="https://www.hgifs.com/ifr/…" …>'>
+
+  with no iframe anywhere and a "View in app" button in its place. The server
+  sent the content — the provider's iframe markup is in the attribute — and the
+  component declined to render it for a logged-out mobile reader.
+
+  Two stubs: one that never renders its iframe (the device case), and one that
+  does after a short delay (a well-behaved embed the app must not double up).
+  The nagging embed's src is an https URL on a reserved, unresolvable domain:
+  the app only ever hatches https sources, and what the test asserts is that
+  the iframe is made and laid out, not that the provider answers.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<title>r/embed</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  .frame { position: relative; height: 300px; background: #000; }
+  shreddit-blurred-container, shreddit-async-loader, shreddit-embed { display: block; height: 100%; }
+</style></head>
+<body><shreddit-app>
+  <shreddit-post id="post">
+    <h1>An adult-flagged link post</h1>
+
+    <!-- the device case: deferred forever -->
+    <div class="frame" id="frame-nag">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">
+        <div slot="blurred"><div style="height:300px;background:#222"></div></div>
+        <div slot="revealed" style="height:100%">
+          <shreddit-async-loader bundlename="embed" loading="eager">
+            <shreddit-embed id="nag" providername="hgifs" loading-fix-enabled="" data-embed-obscured-deferred=""
+              html='&lt;iframe src="https://provider.invalid/ifr/880431425030949422" frameborder="0" scrolling="no" width="100%" height="100%" allowfullscreen style="position:absolute;"&gt;&lt;/iframe&gt;'></shreddit-embed>
+          </shreddit-async-loader>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+
+    <!-- the well-behaved case: renders its own iframe once revealed -->
+    <div class="frame" id="frame-good">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">
+        <div slot="blurred"><div style="height:300px;background:#222"></div></div>
+        <div slot="revealed" style="height:100%">
+          <shreddit-async-loader bundlename="embed" loading="eager">
+            <shreddit-embed id="good" providername="example"
+              html='&lt;iframe src="/r/embed/provider.html?good" width="100%" height="100%"&gt;&lt;/iframe&gt;'></shreddit-embed>
+          </shreddit-async-loader>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+  </shreddit-post>
+
+  <!-- the feed case: Reddit sized the frame square, the media is 16:9 -->
+  <shreddit-post id="feed-declared">
+    <div class="frame" id="frame-declared" data-aspect-ratio-container="" style="aspect-ratio: 1; min-height: 300px; height: auto;">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">
+        <div slot="blurred"><div style="height:100%;background:#222"></div></div>
+        <div slot="revealed" style="height:100%">
+          <shreddit-async-loader bundlename="embed" loading="eager">
+            <shreddit-embed id="declared" providername="redgifs" data-embed-obscured-deferred=""
+              html='&lt;iframe src="https://provider.invalid/ifr/declared" width="640" height="360" frameborder="0"&gt;&lt;/iframe&gt;'></shreddit-embed>
+          </shreddit-async-loader>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+  </shreddit-post>
+
+  <!-- the feed as reported (1.9.1): Reddit's OWN iframe, absolutely positioned
+       inside a height-less wrapper, so it collapses to an iframe's intrinsic
+       150px. Nothing here is hatched; the app has only a size to contribute. -->
+  <shreddit-post id="feed-own">
+    <div class="frame" id="frame-own" data-aspect-ratio-container="" style="width:100%; aspect-ratio: 1; min-height: 300px; max-height: 540px; height: auto;">
+      <div class="absolute inset-0 h-full w-full" style="position:absolute;inset:0;height:100%;width:100%">
+        <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">
+          <div slot="blurred">
+            <img alt="" style="width:100%;height:100%;object-fit:cover"
+                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='854'%3E%3Crect width='480' height='854' fill='%23333'/%3E%3C/svg%3E">
+          </div>
+          <div slot="revealed" style="height:100%">
+            <shreddit-async-loader bundlename="embed" loading="eager">
+              <shreddit-embed id="own-feed" providername="hgifs" data-renders-own-iframe=""
+                html='&lt;iframe src="https://provider.invalid/ifr/feed" width="100%" height="100%" style="position:absolute;"&gt;&lt;/iframe&gt;'></shreddit-embed>
+            </shreddit-async-loader>
+          </div>
+        </shreddit-blurred-container>
+      </div>
+    </div>
+  </shreddit-post>
+
+  <shreddit-post id="feed-placeholder">
+    <div class="frame" id="frame-placeholder" data-aspect-ratio-container="" style="aspect-ratio: 1; min-height: 300px; height: auto;">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">
+        <div slot="blurred">
+          <!-- Reddit's preview image carries the media's shape: 800x450 -->
+          <img id="preview" alt="" style="width:100%;height:100%;object-fit:cover"
+               src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='450'%3E%3Crect width='800' height='450' fill='%23333'/%3E%3C/svg%3E">
+        </div>
+        <div slot="revealed" style="height:100%">
+          <shreddit-async-loader bundlename="embed" loading="eager">
+            <shreddit-embed id="placeholder-embed" providername="hgifs" data-embed-obscured-deferred=""
+              html='&lt;iframe src="https://provider.invalid/ifr/placeholder" width="100%" height="100%"&gt;&lt;/iframe&gt;'></shreddit-embed>
+          </shreddit-async-loader>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+  </shreddit-post>
+
+<script>
+  // The blurred container, live: its button reveals, and it tells embeds.
+  customElements.define('shreddit-blurred-container', class extends HTMLElement {
+    static get observedAttributes() { return ['blurred', 'embed-obscured']; }
+    connectedCallback() { this.upgraded = true; this.render(); }
+    attributeChangedCallback() { if (this.upgraded) this.render(); }
+    gated() { return this.hasAttribute('blurred') || this.hasAttribute('embed-obscured'); }
+    render() {
+      const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
+      const blurred = this.gated();
+      const name = blurred ? 'blurred' : 'revealed';
+      root.innerHTML =
+        '<style>.outer{position:relative;height:100%}.inner{display:block;height:100%}' +
+        '.overlay{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center}</style>' +
+        '<div class="outer">' +
+        (blurred ? '<div class="overlay"><button>View NSFW content</button></div>' : '') +
+        '<span class="inner' + (blurred ? ' blurred' : '') + '"' +
+        (blurred ? ' style="filter:blur(40px)"' : '') + '><slot name="' + name + '"></slot></span></div>';
+      const b = root.querySelector('button');
+      if (b) b.addEventListener('click', () => {
+        this.removeAttribute('blurred'); this.removeAttribute('embed-obscured');
+        this.render();
+        for (const e of this.querySelectorAll('shreddit-embed')) e.dispatchEvent(new Event('reveal'));
+      });
+    }
+  });
+
+  // The embed. The "nag" one answers a reveal with an app prompt, never an
+  // iframe. The "good" one renders its iframe shortly after the reveal.
+  customElements.define('shreddit-embed', class extends HTMLElement {
+    connectedCallback() {
+      const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
+      root.innerHTML = '<div style="height:100%;background:#000"></div>';
+      this.addEventListener('reveal', () => {
+        if (this.hasAttribute('data-renders-own-iframe')) {
+          // What Reddit's feed embed does, per the report: a positioned
+          // wrapper with no height, a link overlay, and the provider iframe.
+          root.innerHTML =
+            '<div class="relative" style="position:relative">' +
+            '<a class="absolute inset-0" style="position:absolute;inset:0" href="#"></a>' +
+            '<iframe id="reddit-own" src="https://provider.invalid/ifr/feed" frameborder="0" scrolling="no"' +
+            ' width="100%" height="100%" allowfullscreen style="position:absolute;"></iframe></div>';
+          return;
+        }
+        if (this.hasAttribute('data-embed-obscured-deferred')) {
+          root.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center">' +
+                           '<a id="view-in-app" href="https://reddit.onelink.me/x">View in app</a></div>';
+        } else {
+          setTimeout(() => {
+            root.innerHTML = '<iframe id="own-iframe" src="/r/embed/provider.html?good" style="width:100%;height:100%;border:0"></iframe>';
+          }, 300);
+        }
+      });
+    }
+  });
+
+  window.__state = function () {
+    function iframesIn(frameId) {
+      const out = [];
+      const frame = document.getElementById(frameId);
+      const walk = (n) => {
+        for (const el of n.querySelectorAll('*')) {
+          if (el.tagName === 'IFRAME') out.push({ src: el.getAttribute('src'), own: el.id === 'own-iframe',
+            h: Math.round(el.getBoundingClientRect().height), tb: !!el.getAttribute('data-tb-embed') });
+          if (el.shadowRoot) walk(el.shadowRoot);
+        }
+      };
+      walk(frame);
+      return out;
+    }
+    const nag = document.getElementById('nag');
+    const shape = (id) => {
+      const f = document.getElementById(id);
+      const r = f.getBoundingClientRect();
+      let tb = f.querySelector('[data-tb-embed]');
+      if (!tb) {
+        // Reddit's own iframe lives in the embed's shadow root.
+        const walk = (n) => { for (const el of n.querySelectorAll('*')) {
+          if (el.tagName === 'IFRAME') return el;
+          if (el.shadowRoot) { const r2 = walk(el.shadowRoot); if (r2) return r2; }
+        } return null; };
+        tb = walk(f);
+      }
+      const ib = tb ? tb.getBoundingClientRect() : null;
+      return { w: Math.round(r.width), h: Math.round(r.height),
+               ratio: r.height ? +(r.width / r.height).toFixed(2) : 0,
+               iframeFills: !!(ib && Math.abs(ib.height - r.height) < 2 && Math.abs(ib.width - r.width) < 2) };
+    };
+    return {
+      own: shape('frame-own'),
+      ownIframeHeight: (() => { const e = document.getElementById('own-feed');
+        const i = e && e.shadowRoot ? e.shadowRoot.querySelector('iframe') : null;
+        return i ? Math.round(i.getBoundingClientRect().height) : 0; })(),
+      declared: shape('frame-declared'),
+      placeholder: shape('frame-placeholder'),
+      nag: iframesIn('frame-nag'),
+      good: iframesIn('frame-good'),
+      nagHidden: getComputedStyle(nag).display === 'none',
+      nagStillGated: nag.closest('shreddit-blurred-container').hasAttribute('embed-obscured'),
+    };
+  };
+</script>
+</shreddit-app></body></html>

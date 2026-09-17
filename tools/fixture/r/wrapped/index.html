@@ -1,0 +1,97 @@
+<!doctype html>
+<!--
+  The hypothesis that the prompt remover is eating the post.
+
+  Symptom, reported three releases running: an adult-flagged post opens as a
+  black box with nothing in it, and the ONLY setting that changes anything is
+  "Remove app prompts and the 18+ wall" — not the reveal, not the network
+  blocking. Against the captured page the suppressor removes nothing at all, so
+  whatever it is removing arrives at runtime, and the one runtime-delivered
+  thing it removes is the experience partial's `<configured-xpromo-modal>`.
+
+  So: what if, on a post page, that response carries the post as well as the
+  wall? Removing the wrapper would take both, and the frame it leaves behind is
+  `bg-black` — a black box with no content and no button. Exactly the report.
+
+  This fixture builds that shape. It is a model of a hypothesis, not a capture;
+  what it pins down is the rule, which holds either way: **removing a prompt
+  must never remove content.**
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<title>r/wrapped</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  /* As Reddit's media frame is: fixed aspect, clipped. Without the clip the
+     revealed media paints over the link this fixture hit-tests. */
+  #frame { background: #000; height: 300px; position: relative; overflow: hidden; }
+  configured-xpromo-modal { display: block; }
+</style></head>
+<body><shreddit-app>
+  <header id="site-header">r/wrapped</header>
+  <shreddit-post id="post">
+    <h1 id="title">An adult-flagged post</h1>
+    <div id="frame" slot="post-media-container"></div>
+  </shreddit-post>
+  <div class="post" id="post-1"><a id="post-link" href="/r/wrapped/comments/a/">A post</a></div>
+
+  <faceplate-partial name="ActivateExperience_Zfxklh"
+      src="/svc/shreddit/partial/Zfxklh/activate-experience" loading="programmatic"></faceplate-partial>
+
+<script>
+  // Reddit's rpl components: template -> shadow <dialog> -> showModal(), which
+  // makes the rest of the document inert.
+  customElements.define('rpl-dialog', class extends HTMLElement {
+    connectedCallback() {
+      if (this.shadowRoot) return;
+      const root = this.attachShadow({ mode: 'open' });
+      const dlg = document.createElement('dialog');
+      const tpl = this.querySelector('template');
+      if (tpl) dlg.appendChild(tpl.content.cloneNode(true));
+      root.appendChild(dlg);
+      try { dlg.showModal(); } catch (e) {}
+    }
+  });
+
+  // The response: the wall AND the post's media, in one wrapper.
+  window.__activateWrapped = function () {
+    const modal = document.createElement('configured-xpromo-modal');
+    modal.setAttribute('dialog-id', 'configured-xpromo-nsfw');
+    modal.innerHTML =
+      '<rpl-dialog blocking open dialog-classname="configured-xpromo nsfw">' +
+      '  <template><h2>You must be 18+ to view this community</h2>' +
+      '  <button id="over18">Yes, I\'m Over 18</button></template>' +
+      '</rpl-dialog>' +
+      '<shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="">' +
+      '  <div slot="blurred"><div style="height:300px;background:#222"></div></div>' +
+      '  <div slot="revealed"><div id="media" style="height:300px;background:#0a7">the post</div></div>' +
+      '</shreddit-blurred-container>';
+    document.getElementById('frame').appendChild(modal);
+  };
+
+  window.__state = function () {
+    const modal = document.querySelector('configured-xpromo-modal');
+    const container = document.querySelector('shreddit-blurred-container');
+    const link = document.getElementById('post-link');
+    const r = link.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      modalPresent: !!modal,
+      modalHidden: modal ? getComputedStyle(modal).display === 'none' : null,
+      containerPresent: !!container,
+      openDialogs: (() => {
+        let n = 0;
+        for (const el of document.querySelectorAll('*')) {
+          if (el.shadowRoot) for (const d of el.shadowRoot.querySelectorAll('dialog')) if (d.open) n++;
+        }
+        for (const d of document.querySelectorAll('dialog')) if (d.open) n++;
+        return n;
+      })(),
+      pageUsable: hit === link || link.contains(hit),
+      mediaHeight: (() => {
+        const m = document.getElementById('media');
+        return m ? Math.round(m.getBoundingClientRect().height) : 0;
+      })(),
+    };
+  };
+</script>
+</shreddit-app></body></html>

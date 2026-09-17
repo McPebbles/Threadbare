@@ -146,6 +146,23 @@ def main():
             if depth != 0:
                 fail(path, "unbalanced %s (net %+d)" % (label, depth))
 
+        # ---- modifiers that cannot go together
+        #
+        # Not a type checker, but these two pairings are unambiguous compile
+        # errors that a regex can see, and the first one broke the 1.6.0 build:
+        # a `@Volatile var` was changed to a `val` and the annotation left in
+        # place. Everything else in this suite was green, because nothing here
+        # compiles anything.
+        for pattern, why in (
+            (r"@Volatile\s+(?:(?:private|internal|public|protected|const)\s+)*val\b",
+             "@Volatile cannot be used on an immutable property (val)"),
+            (r"\blateinit\s+(?:(?:private|internal|public|protected)\s+)*val\b",
+             "lateinit cannot be used on an immutable property (val)"),
+        ):
+            for m in re.finditer(pattern, code):
+                line = code.count("\n", 0, m.start()) + 1
+                fail(path, "line %d: %s" % (line, why))
+
         # ---- package agrees with directory
         m = re.search(r"^\s*package\s+([\w.]+)", code, re.M)
         if not m:
@@ -184,7 +201,7 @@ def main():
         text = open(scripts, encoding="utf-8").read()
         for block in re.findall(r'"""(.*?)"""', text, re.S):
             for var in re.findall(r"\$\{(\w+)", block):
-                if var not in ("jsString", "textScalePercent", "major", "css"):
+                if var not in ("jsString", "textScalePercent", "major", "css", "acceptAgeGate"):
                     fail(scripts, "raw string interpolates unknown '%s'" % var)
 
     print("checked %d Kotlin files, %d top-level declarations" % (len(files), len(declared)))

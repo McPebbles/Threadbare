@@ -100,6 +100,204 @@ built from the same stale names, so 38 green tests said nothing.
 The stale selectors are kept, at no cost, in case older markup is still served
 somewhere; they are no longer what the defence rests on.
 
+## The third and fourth failures: the same flag, twice misread
+
+1.3.0 and 1.4.0 handled the 18+ block as an *overlay* — a dialog to close, a
+filter to clear. On a post page it is neither.
+
+From two captures of one post, blocked and then unblocked by pressing its own
+"View NSFW content" button:
+
+| | host attributes | shadow root |
+|---|---|---|
+| blocked | `mode="slot" reason="nsfw" embed-obscured blurred` | `.overlay` with the button, `span.inner.blurred` at `filter:blur(40px)`, **`<slot name="blurred">`**, `.bg-scrim` |
+| unblocked | `mode="slot" reason="nsfw"` | `span.inner`, **`<slot name="revealed">`** |
+
+The light DOM is identical in both: `<div slot="blurred">` holding a
+server-blurred placeholder, and `<div slot="revealed">` holding the post. So in
+`mode="slot"` the real post is **assigned to no slot** — absent from the layout,
+not blurred in it. The feed reads fine because feed items use the `mode="wrap"`
+variant, where the content *is* slotted and merely filtered.
+
+**1.5.0 acted on that and was still wrong**, which is the more interesting half.
+It cleared the host's state attributes and renamed the rendered slot at
+document-start, and the suite — running the shipped script against the captured
+markup — showed the post revealed. On the phone the same post came up blank.
+
+> **A capture is the page, not the program running on it.** The DOM the user
+> sends has no JavaScript in it. Reddit's `<shreddit-blurred-container>` is a
+> live component whose bundle arrives late and whose revealed slot holds a
+> *lazily initialised* player. Editing the element's state before it upgrades
+> wins a race nobody wanted to win: the component comes up already-revealed and
+> never runs the path that tells the media to load.
+
+The tell was in the user's report and went unread twice: *a blank gap with no
+button*. Reddit's blurred state always offers a button. A page with neither
+content nor button is not Reddit's gate — it is the app's edit of it.
+
+### What 1.6.0 does instead
+
+`SiteScripts.ADULT_REVEALER`, under its own setting, in this order:
+
+1. **Wait for the page to settle.** Nothing runs at document-start.
+2. **Wait for the component**, up to three seconds after that, rather than
+   assuming an element that has not upgraded yet never will.
+3. **Press its own button.** Reddit's reveal path, with everything else it does
+   still happening.
+4. **Verify** — the revealed child must be assigned *and laid out*. Measuring
+   the wrapper alone is not enough: Reddit's media wrapper holds an absolutely
+   positioned child and measures zero itself while the media fills the frame.
+5. **Fall back** to editing attributes and the rendered slot only when no
+   component ever arrived, so pressing could not have worked.
+6. **Roll it all back** if that produced nothing — placeholder and button
+   restored. 1.5.0 hid the button before checking, which turned a page you
+   could tap through into one you could not.
+
+The tap target is hidden only after step 4 succeeds. Nothing is ever removed
+from the shadow tree; lit hydrates against the marker comments in it.
+
+Two fixtures, because each earlier version passed against one world and failed
+in the other: `tools/fixture/r/capture/` is the user's own markup with no
+definitions at all, and `tools/fixture/r/hydrate/` is a live component with
+lazily-initialised media. The second is explicitly a **model of a hypothesis**,
+and says so in its own comments — it reproduces a mechanism consistent with what
+the device did, which is not the same as being the device. The four behaviours
+above are mutation-tested; neutering any one of them fails the suite, and
+neutering the grace period reproduces the 1.5.0 bug exactly.
+
+### Why it is a separate setting
+
+Until 1.6.0 this lived inside *Remove app prompts and the 18+ wall*, so the only
+way to get a post page back was to give up the wall suppression too — and with
+it the feed previews. Two jobs, two switches: one removes Reddit's nagging, the
+other changes what the reader is shown. The new key inherits the old switch's
+value on upgrade rather than defaulting to on, so anyone who had turned the old
+one off to cope does not find the new one on underneath them.
+
+## And one more, for third-party embeds
+
+The 18+ confirmation explains Reddit-hosted media. The post that had been
+failing all along turned out to be `post-type="link"` from `hgifs.com`, and
+after the reveal its frame held:
+
+    <shreddit-embed providername="hgifs" data-embed-obscured-deferred
+        html='<iframe src="https://www.hgifs.com/ifr/…" …>'>
+
+no iframe anywhere, and a "View in app" button. The provider's iframe markup
+is in the attribute — the server sent it — and the component would not
+instantiate it for a logged-out mobile reader. The promotion machinery again,
+one layer deeper, and with nothing to press.
+
+`hatchEmbeds` in the revealer waits a grace period after a container is
+revealed, and for any `shreddit-embed` that still has no iframe, makes one from
+the `src` in its own `html` attribute. Only the src (never the attribute's HTML),
+only `https:`, inserted beside the component rather than into a shadow tree lit
+owns, with the component hidden rather than removed. An embed that renders its
+own iframe in time is left alone. `tools/fixture/r/embed/` has both, and the
+suite asserts neither is doubled up.
+
+> **"The content is in the page" is the test for whether reaching in is
+> legitimate.** Pressing is preferred because it runs the site's own path. When
+> the site's own path ends at an app-store link and the content is sitting in
+> an attribute, using that content is not a guess about structure — it is what
+> the component was going to do before it decided not to.
+
+## The answer, after six versions
+
+The control that settled it: the same post in Vanadium, logged out, shows the
+blurred content and loads it **once the prompts are clicked through**. So the
+server will send it, and the app was the difference.
+
+Reddit's "Yes, I'm Over 18" button does four things, from the captured markup:
+
+| action | what it is |
+|---|---|
+| `<ac-set-cookie name="over18" value="true">` | the cookie the app already seeded |
+| `<ac-track san="xpromo\|dismiss\|bypassable_xpromo_nsfw_bypassable">` | telemetry, blocked, harmless |
+| `<ac-gql-mutate operation="StoreUxtargetingAction" … action DISMISS>` | **server-side state against the loid** |
+| `<ac-call method="location.reload">` | fetch the page again, now unlocked |
+
+The third is the one that matters and the one a cookie cannot fake. Until that
+mutation is recorded, an adult-flagged post's media is never in the page. Every
+version of this app deleted the dialog carrying that button — that is the whole
+bug, and it explains every symptom: the frame with the right height, the gate
+that reveals correctly, the loader with nothing to load, and the refusal log
+showing nothing refused.
+
+> **A prompt can be a door.** Removing an interstitial is not always the same as
+> getting past it. Ask what the accept button *does* before deleting it — here
+> it was the only thing that would make the server send the content.
+
+1.8.0 presses it, from the observer, before any removal pass runs. Capped at two
+presses per session in `sessionStorage`, because the button reloads the page and
+a server that kept re-serving the wall would otherwise loop; past the cap the
+old removal behaviour resumes. Nothing that carries the button is removed before
+it has been pressed. The fixture `tools/fixture/r/agegate/` reproduces the
+button with its four `ac-*` actions as stubs, and the suite asserts which ones
+fired — and the `r/real/` fixture's captured modal now asserts the press too,
+where it used to assert deletion. Mutation-tested: stop the press and four
+assertions fail.
+
+## What the device finally said (1.7.0 diagnostics)
+
+The report that ended four rounds of inference, from an adult-flagged post with
+every setting on:
+
+- one `shreddit-blurred-container`, `gated=false`, `upgraded=true`,
+  `renderedSlot=revealed`, `presses=1`, `done=true`, `revealedHeight=411` —
+  **the reveal works**, by pressing Reddit's own button, exactly as designed;
+- the media frame is 411px and contains
+  `<xpromo-nsfw-blocking-container><shreddit-blurred-container …>` —
+  **that element is real and it wraps the post**. It came from a userscript in
+  1.1.0 and `pierceShadow()` removed the host outright. That is what emptied
+  post pages;
+- the revealed slot holds a `shreddit-async-loader` and the only media elements
+  present are the two placeholder images — **the post itself had never been
+  fetched**, with the experience partial refused at the network.
+
+Two lessons, neither of which is about Reddit:
+
+> **An element named for the block may be wrapped around the thing being
+> blocked.** A name in a kill list is a guess about structure. Guard the
+> structure instead: never delete a subtree that holds content.
+
+> **A request-level defence needs a request-level report.** The DOM report was
+> built first and could say the page was empty but not why. One list of refused
+> URLs would have settled it in a round, so the report now carries both.
+
+## The fifth failure: the suppressor was eating the post
+
+The reveal work above was built on the wrong suspect. With 1.6.1 on the phone,
+turning the *reveal* off changed nothing; turning **prompt suppression** off was
+the only thing that brought an adult-flagged post back. So the element being
+destroyed is one the prompt suppressor destroys, not one the revealer touches.
+
+Against the captured page the suppressor matches nothing — no KILL selector, no
+stylesheet rule, verified by running the shipped scripts over it and walking the
+media frame's ancestors. Therefore what it removes is delivered at runtime, and
+the only runtime-delivered thing it removes is the experience partial's
+`<configured-xpromo-modal>`. On a post page that response evidently carries the
+post as well as the wall. Remove the wrapper and both go; what remains is
+Reddit's `bg-black` media frame, which is exactly the "black box with no
+content, no button" in the report.
+
+The fix is a rule rather than a selector, because the selector will change:
+
+> **Removing a prompt must never remove content.** Before deleting anything,
+> ask whether the post is inside it. If it is, close the dialog it carries,
+> remove that, and leave the subtree alone.
+
+`holdsContent()` in the observer, and `:not(:has(...))` on every `display:none`
+rule in the stylesheet. A browser without `:has()` drops the rule entirely,
+which shows a prompt that the observer then removes — the safe direction. The
+fixture `tools/fixture/r/wrapped/` builds the wrapped shape and the guard is
+mutation-tested: with it disabled the post vanishes and the media measures zero,
+which is the device report reproduced in the suite.
+
+This is the third distinct mechanism behind one symptom, which is why 1.7.0 also
+ships diagnostics: "Why is this blank?" and "Save page HTML", off by default.
+Guessing has now cost more than the feature.
+
 ## Three layers, weakest last
 
 ### Layer 1 — refuse the request whose response is the overlay (`privacy/XpromoBlock.kt`)
@@ -148,6 +346,9 @@ For what the first two layers cannot do:
 2. **Shadow roots generally.** An injected stylesheet does not cross the boundary.
 3. **Classes on `<body>`.** CSS can force the overflow open but cannot remove a
    class the site may read.
+4. **The withheld post** is deliberately NOT handled here any more. It is
+   content rather than a prompt, it needs the page to have settled, and it
+   belongs to a different setting: `ADULT_REVEALER`, above.
 
 The fixture for this (`tools/fixture/r/real/`) is built from the captured
 markup, scrubbed of the user's identifiers, with stub `rpl-dialog` /

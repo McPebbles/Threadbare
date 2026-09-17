@@ -1,0 +1,149 @@
+<!doctype html>
+<!--
+  The live-component half, and the reason the revealer presses a button instead
+  of editing state.
+
+  WHAT THIS MODELS, AND WHAT IT DOES NOT PROVE
+
+  On device, Reddit's JavaScript is running and `<shreddit-blurred-container>`
+  is a real component whose `slot="revealed"` child is a *lazily initialised*
+  player. 1.4.0 cleared the container's state at document-start and 1.5.0 also
+  renamed the rendered slot; both worked against a captured DOM with no scripts
+  and both left post pages blank on device. The mechanism that fits: the reveal
+  happened before the component upgraded, so the component never ran the code
+  path that tells the media to load, and the reader got an empty box.
+
+  The stub below reproduces exactly that: the player fills itself in only when
+  the component reveals through its own path (`reveal()`, called by its button
+  or by an attribute change it observes *after* upgrading). State cleared before
+  upgrade leaves the slot rendered and the player empty.
+
+  This is a model of a hypothesis, not a capture of the device. What it can
+  prove is that the shipped script behaves correctly in that world AND in the
+  no-definition world (../capture/). What it cannot prove is that this is the
+  world the phone is in. See DESIGN.md.
+-->
+<html device="mobile"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>r/hydrate</title>
+<style>
+  body { font: 14px system-ui; margin: 0; }
+  #aspect { position: relative; width: 100%; height: 300px; }
+  shreddit-blurred-container { display: block; height: 100%; }
+</style></head>
+<body>
+<shreddit-app>
+  <header id="site-header">r/hydrate</header>
+  <shreddit-post id="post">
+    <h1>A post behind the adult flag</h1>
+    <div id="aspect">
+      <shreddit-blurred-container mode="slot" reason="nsfw" embed-obscured="" blurred="" variant="default">
+        <div slot="blurred"><div id="placeholder" style="height:300px;background:#222"></div></div>
+        <div slot="revealed" style="height:100%">
+          <lazy-player id="player"></lazy-player>
+        </div>
+      </shreddit-blurred-container>
+    </div>
+    <shreddit-blurred-container mode="wrap" reason="nsfw" embed-obscured="" blurred="" variant="default">
+      <div slot="revealed"><p id="post-text">The self-text of the post.</p></div>
+    </shreddit-blurred-container>
+    <shreddit-blurred-container mode="wrap" reason="spoiler" blurred="" variant="default">
+      <div slot="revealed"><p id="spoiler-text">Who dies at the end.</p></div>
+    </shreddit-blurred-container>
+  </shreddit-post>
+  <div id="comments"><p id="comment-1">An ordinary comment.</p></div>
+</shreddit-app>
+
+<script>
+  // The media, which only exists once something tells it to load. A real
+  // shreddit-player fetches its bundle; this one just fills a box.
+  class LazyPlayer extends HTMLElement {
+    load() {
+      if (this.dataset.loaded) return;
+      this.dataset.loaded = '1';
+      this.innerHTML = '<div id="media" style="height:300px;background:#0a7">the post</div>';
+    }
+  }
+  customElements.define('lazy-player', LazyPlayer);
+
+  // Defined late, as a bundle would be. Everything the app does at
+  // document-start happens before this runs.
+  window.__hydrate = function () {
+    if (customElements.get('shreddit-blurred-container')) return;
+    customElements.define('shreddit-blurred-container', class extends HTMLElement {
+      static get observedAttributes() { return ['blurred', 'embed-obscured']; }
+      connectedCallback() { this.upgraded = true; this.render(); }
+      attributeChangedCallback() {
+        if (!this.upgraded) return;      // pre-upgrade edits are not observed
+        this.render();
+        if (!this.gated()) this.reveal();
+      }
+      gated() {
+        return this.hasAttribute('blurred') || this.hasAttribute('embed-obscured');
+      }
+      /** The only path that tells the media to load. */
+      reveal() {
+        for (const el of this.querySelectorAll('lazy-player')) el.load();
+      }
+      render() {
+        const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
+        const blurred = this.gated();
+        const name = (this.getAttribute('mode') === 'slot' && blurred) ? 'blurred' : 'revealed';
+        root.innerHTML =
+          '<style>.outer{position:relative;overflow:hidden;height:100%}' +
+          '.inner{display:block;height:100%}.overlay{position:absolute;inset:0;z-index:2;' +
+          'display:flex;align-items:center;justify-content:center}</style>' +
+          '<div class="outer">' +
+          (blurred ? '<div class="overlay"><button id="reveal-button">View NSFW content</button></div>' : '') +
+          '<span class="inner' + (blurred ? ' blurred' : '') + '"' +
+          (blurred ? ' style="filter:blur(40px)" aria-hidden="true"' : ' aria-hidden="false"') +
+          '><slot name="' + name + '"></slot></span></div>';
+        const button = root.getElementById('reveal-button');
+        if (button) {
+          button.addEventListener('click', () => {
+            this.removeAttribute('blurred');
+            this.removeAttribute('embed-obscured');
+            this.render();
+            this.reveal();          // what the app cannot do for itself
+          });
+        }
+      }
+    });
+  };
+
+  // The control: what 1.4.0 and 1.5.0 did. Clearing state before the
+  // definition arrives leaves the slot rendered and the media never told.
+  window.__editStateEarly = function () {
+    for (const host of document.querySelectorAll('shreddit-blurred-container')) {
+      host.removeAttribute('blurred');
+      host.removeAttribute('embed-obscured');
+      const root = host.shadowRoot;
+      if (!root) continue;
+      for (const s of root.querySelectorAll('slot[name="blurred"]')) s.setAttribute('name', 'revealed');
+    }
+  };
+
+  window.__state = function () {
+    const host = document.querySelector('shreddit-blurred-container[mode="slot"]');
+    const media = document.getElementById('media');
+    const inner = host && host.shadowRoot ? host.shadowRoot.querySelector('.inner') : null;
+    const overlays = host && host.shadowRoot ? [...host.shadowRoot.querySelectorAll('.overlay')] : [];
+    const box = id => {
+      const el = document.getElementById(id);
+      return el ? Math.round(el.getBoundingClientRect().height) : 0;
+    };
+    return {
+      gated: !!(host && (host.hasAttribute('blurred') || host.hasAttribute('embed-obscured'))),
+      mediaHeight: media ? Math.round(media.getBoundingClientRect().height) : 0,
+      filter: inner ? getComputedStyle(inner).filter : null,
+      buttonShown: overlays.some(o => getComputedStyle(o).display !== 'none'),
+      textHeight: box('post-text'),
+      spoilerBlurred: (() => {
+        const s = document.querySelector('shreddit-blurred-container[reason="spoiler"]');
+        const i = s && s.shadowRoot ? s.shadowRoot.querySelector('.inner') : null;
+        return i ? getComputedStyle(i).filter !== 'none' : s.hasAttribute('blurred');
+      })(),
+    };
+  };
+</script>
+</body></html>

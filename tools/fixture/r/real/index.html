@@ -79,6 +79,24 @@
 
   // Is the page inert right now? A modal dialog in the top layer makes every
   // other element non-hit-testable and unfocusable.
+  // The app is expected to PRESS Reddit's confirmation rather than delete it:
+  // the button's own handlers are what record the dismissal server-side, and
+  // that is what makes Reddit send the post's media. Nothing here acts on the
+  // click; the count is the assertion.
+  window.__over18Clicks = 0;
+  document.addEventListener('click', function (e) {
+    // composedPath, because the dialog's content lives in a shadow root and a
+    // retargeted event.target would be the host element instead.
+    var path = e.composedPath ? e.composedPath() : [e.target];
+    for (var i = 0; i < path.length; i++) {
+      var el = path[i];
+      if (el && el.querySelector && el.querySelector('ac-set-cookie[name="over18"]')) {
+        window.__over18Clicks++;
+        return;
+      }
+    }
+  }, true);
+
   window.__pageInert = function () {
     var link = document.getElementById('post-link');
     var r = link.getBoundingClientRect();

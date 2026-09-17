@@ -10,6 +10,7 @@ import androidx.webkit.WebViewFeature
 import com.threadbare.client.privacy.Blocklist
 import com.threadbare.client.privacy.XpromoBlock
 import com.threadbare.client.util.Prefs
+import com.threadbare.client.util.RefusalLog
 import com.threadbare.client.util.Safely
 import java.io.ByteArrayInputStream
 
@@ -46,12 +47,19 @@ class AppWebViewClient(private val host: WebHost) : WebViewClient() {
         val context = view.context
 
         if (Prefs.blockXpromoBundles(context)) {
-            val xpromo = XpromoBlock.decide(uri.host, uri.path)
-            if (xpromo.blocked) return blocked()
+            val xpromo = XpromoBlock.decide(uri.host, uri.path, uri.query)
+            if (xpromo.blocked) {
+                RefusalLog.record(uri.toString(), xpromo.pattern)
+                return blocked()
+            }
         }
 
         val decision = Blocklist.decide(uri.host, uri.path, Prefs.blockMode(context))
-        return if (decision.blocked) blocked() else null
+        if (decision.blocked) {
+            RefusalLog.record(uri.toString(), decision.reason)
+            return blocked()
+        }
+        return null
     }
 
     override fun shouldOverrideUrlLoading(
@@ -118,6 +126,11 @@ class AppWebViewClient(private val host: WebHost) : WebViewClient() {
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
         host.onPageStarted(view, url)
+
+        // What the app refused belongs to the page in front of the reader, not
+        // to the one before it.
+        RefusalLog.enabled = Prefs.diagnostics(view.context)
+        RefusalLog.clear()
 
         // Fallback path for a WebView without DOCUMENT_START_SCRIPT. Later than
         // document-start, so an overlay can flash before it goes, but the

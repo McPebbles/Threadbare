@@ -46,6 +46,8 @@ class TopBar(
         fun onBadSubreddit(typed: String)
         fun onToggleSaved(kind: SavedKind)
         fun onShowSaved(kind: SavedKind)
+        fun onRevealReport()
+        fun onSavePage()
         fun currentUrl(): String?
         fun currentTitle(): String?
     }
@@ -205,6 +207,11 @@ class TopBar(
         menu.menu.findItem(R.id.action_saved_posts)?.isVisible =
             SavedStore.of(context, SavedKind.POST).isNotEmpty()
 
+        // Diagnostics are a deliberate mode, not everyday furniture.
+        val diagnostics = Prefs.diagnostics(activity)
+        menu.menu.findItem(R.id.action_reveal_report)?.isVisible = diagnostics
+        menu.menu.findItem(R.id.action_save_page)?.isVisible = diagnostics
+
         menu.menu.findItem(R.id.action_clear_session)?.isVisible =
             !Prefs.ephemeralSession(context)
 
@@ -221,6 +228,8 @@ class TopBar(
                 R.id.action_open_external -> { callbacks.onOpenExternally(); true }
                 R.id.action_sign_in -> { callbacks.onSignIn(); true }
                 R.id.action_clear_session -> { callbacks.onClearSession(); true }
+                R.id.action_reveal_report -> { callbacks.onRevealReport(); true }
+                R.id.action_save_page -> { callbacks.onSavePage(); true }
                 R.id.action_settings -> { callbacks.onSettings(); true }
                 else -> false
             }

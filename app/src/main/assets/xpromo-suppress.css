@@ -49,21 +49,30 @@
  * survives display:none. The observer in SiteScripts closes the dialog and
  * removes the host; this rule only stops the frame it would paint first.
  */
-configured-xpromo-modal,
-rpl-dialog[dialog-classname*="configured-xpromo"],
-rpl-bottom-sheet[dialog-classname*="configured-xpromo"],
-[dialog-id^="configured-xpromo"],
-[id^="configured-xpromo"] {
+/*
+ * Every one of these carries a `:not(:has(...))` guard, and it is not
+ * decoration. Three releases running, an adult-flagged post opened as a black
+ * box with nothing in it, and the prompt suppression was the only setting that
+ * made any difference — so something Reddit delivers at runtime, under one of
+ * these names, has the post inside it. **Hiding a prompt must never hide
+ * content.** A browser without `:has()` drops the rule entirely, which shows a
+ * prompt the observer then removes: the safe direction to fail in.
+ */
+configured-xpromo-modal:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="post-media-container"], [slot="revealed"])),
+rpl-dialog[dialog-classname*="configured-xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="post-media-container"], [slot="revealed"])),
+rpl-bottom-sheet[dialog-classname*="configured-xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="post-media-container"], [slot="revealed"])),
+[dialog-id^="configured-xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="post-media-container"], [slot="revealed"])),
+[id^="configured-xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="post-media-container"], [slot="revealed"])) {
   display: none !important;
 }
 
 /* ------------------------------------------- the xpromo family, by group */
 
-shreddit-async-loader[paint-group="xpromo"],
+shreddit-async-loader[paint-group="xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="revealed"])),
 xpromo-bottom-sheet,
 xpromo-bottom-bar,
 xpromo-app-selector,
-xpromo-nsfw-blocking-container,
+xpromo-nsfw-blocking-container:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="revealed"])),
 smart-banner {
   display: none !important;
 }
@@ -72,9 +81,9 @@ smart-banner {
 #xpromo-bottom-sheet,
 #blocking-modal,
 #nsfw-qr-dialog,
-[id*="xpromo_nsfw_blocking"],
-shreddit-async-loader[bundlename*="xpromo"],
-shreddit-async-loader[bundlename*="nsfw_blocking"],
+[id*="xpromo_nsfw_blocking"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="revealed"])),
+shreddit-async-loader[bundlename*="xpromo"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="revealed"])),
+shreddit-async-loader[bundlename*="nsfw_blocking"]:not(:has(shreddit-post, shreddit-player, shreddit-blurred-container, [slot="revealed"])),
 shreddit-async-loader[bundlename="app_selector"],
 shreddit-async-loader[bundlename="top_button"],
 shreddit-async-loader[bundlename="bottom_bar_xpromo"] {
@@ -127,28 +136,9 @@ div[style*="position: fixed"][style*="backdrop-filter"] {
   display: none !important;
 }
 
-/* ------------------------------------------------- the blur on content */
-
 /*
- * Adult-flagged content is additionally blurred rather than withheld. Once the
- * wall itself is gone this is what is left between the reader and the post, and
- * on a privacy or security subreddit the blurred thing is usually a screenshot
- * of a settings screen.
+ * The blur on adult-flagged content used to be handled here. It is not a
+ * prompt, it is the content itself, so it moved to `adult-reveal.css` and to
+ * `SiteScripts.ADULT_REVEALER` under their own setting — and because doing it
+ * from a document-start rule is precisely what made post pages open blank.
  */
-.thumbnail-blur,
-span.inner.blurred,
-img.blurred,
-video.blur,
-[blurred] {
-  filter: none !important;
-  -webkit-filter: none !important;
-}
-
-.thumbnail-shadow,
-.bg-scrim {
-  display: none !important;
-}
-
-.bg-media-background {
-  background: transparent !important;
-}

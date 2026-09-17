@@ -9,12 +9,18 @@ package com.threadbare.client.web
  * to read old.reddit in July 2026 — and on www the 18+ block is a client-side
  * overlay belonging to the app-promotion system instead.
  *
- * They are kept now that the app wraps www rather than old.reddit, because
- * they cost one header each and Reddit has historically honoured them across
- * hosts. They are NOT the primary defence any more: on www the 18+ block is
- * served as part of the app-promotion system, and the three layers in
+ * **And on www the cookie is not sufficient**, which took six versions to
+ * learn. Reddit's own "Yes, I'm Over 18" button sets this cookie *and* runs a
+ * `StoreUxtargetingAction DISMISS` mutation — server-side state against the
+ * reader's loid — and an adult-flagged post's media is withheld until that
+ * mutation has happened. No cookie reproduces it, so the app presses the
+ * button instead (`SiteScripts.xpromoSuppressor`).
+ *
+ * These seeds are kept because they cost one header each and Reddit has
+ * historically honoured them across hosts, and where it does, the prompt is
+ * never offered at all. They are NOT the primary defence: the three layers in
  * `privacy/XpromoBlock.kt`, `assets/xpromo-suppress.css` and
- * `SiteScripts.XPROMO_SUPPRESSOR` are what remove it. See DESIGN.md.
+ * `SiteScripts.xpromoSuppressor` are. See DESIGN.md.
  *
  * Deliberately free of `android.*` imports: the header strings are built here
  * and handed to CookieManager by [WebViewSetup], so they can be asserted on the

@@ -75,6 +75,30 @@
 
     <!-- Settings -->
     <string name="pref_category_reading">Reading</string>
+    <string name="restart_title">Restart Threadbare?</string>
+    <string name="restart_message">This setting is read when the page viewer is
+        created, so it takes effect the next time the app starts.</string>
+    <string name="restart_now">Restart now</string>
+    <string name="restart_later">Later</string>
+    <string name="restart_pending">%1$s\n\nSaved, but not in effect until the app is restarted.</string>
+
+    <string name="pref_category_diagnostics">Diagnostics</string>
+    <string name="pref_diagnostics_title">Diagnostic tools</string>
+    <string name="pref_diagnostics_summary">Adds "Why is this blank?" and "Save
+        page HTML" to the menu, and allows this app\'s page to be inspected over
+        adb from a computer. Off by default: it defines a variable a page could
+        look for, and it opens the viewer to a debugger. Turn it on to
+        investigate something, then turn it off.</string>
+
+    <string name="action_reveal_report">Why is this blank?</string>
+    <string name="action_save_page">Save page HTML</string>
+    <string name="report_title">Adult-content gate</string>
+    <string name="report_copy">Copy</string>
+    <string name="report_copied">Report copied</string>
+    <string name="dump_name">threadbare-page.html</string>
+    <string name="dump_saved">Page saved. Session identifiers were scrubbed.</string>
+    <string name="dump_failed">Could not read the page</string>
+
     <string name="pref_category_privacy">Privacy</string>
     <string name="pref_category_about">About</string>
 
@@ -82,6 +106,12 @@
     <string name="pref_suppress_summary">Hides Reddit\'s "open in app" takeover
         and the age wall it uses to push the app, and unblurs the content behind
         them.</string>
+
+    <string name="pref_reveal_title">Show adult content without tapping through</string>
+    <string name="pref_reveal_summary">Presses Reddit\'s own "View NSFW content"
+        button for you once the page has loaded, rather than editing the page.
+        If a post ever comes up blank, turn this off: the button comes back and
+        the 18+ wall stays gone.</string>
 
     <string name="pref_bundles_title">Block the prompt code from loading</string>
     <string name="pref_bundles_summary">Refuses Reddit\'s app-promotion scripts
@@ -98,10 +128,12 @@
     <string name="pref_ephemeral_summary">Clear cookies, storage and cache when
         the app closes. Turning this off is what lets a sign-in persist.</string>
 
-    <string name="pref_age_gate_title">Set Reddit\'s adult-content cookie</string>
-    <string name="pref_age_gate_summary">Best-effort: sets Reddit\'s own
-        preference cookies. Quarantined communities are a different mechanism and
-        still need an account.</string>
+    <string name="pref_age_gate_title">Confirm you are over 18 automatically</string>
+    <string name="pref_age_gate_summary">Presses Reddit\'s own "Yes, I\'m Over 18"
+        button when it appears, and seeds the cookie it sets. That button also
+        records the dismissal server-side, which is what makes Reddit send an
+        adult-flagged post\'s media at all — a cookie alone does not. Turn this
+        off and you will be asked by Reddit instead.</string>
 
     <string name="pref_external_title">Open off-site links in a browser</string>
     <string name="pref_external_summary">Off keeps every non-Reddit link from

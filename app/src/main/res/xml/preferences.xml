@@ -10,6 +10,12 @@
             app:summary="@string/pref_suppress_summary" />
 
         <SwitchPreferenceCompat
+            app:key="reveal_adult_content"
+            app:defaultValue="true"
+            app:title="@string/pref_reveal_title"
+            app:summary="@string/pref_reveal_summary" />
+
+        <SwitchPreferenceCompat
             app:key="block_xpromo_bundles"
             app:defaultValue="true"
             app:title="@string/pref_bundles_title"
@@ -77,4 +83,13 @@
             app:title="@string/pref_external_title"
             app:summary="@string/pref_external_summary" />
     </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/pref_category_diagnostics">
+        <SwitchPreferenceCompat
+            app:key="diagnostics"
+            app:defaultValue="false"
+            app:title="@string/pref_diagnostics_title"
+            app:summary="@string/pref_diagnostics_summary" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

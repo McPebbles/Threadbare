@@ -9,8 +9,9 @@ element names and attributes Reddit actually ships.
 
 What this can prove: the suppressor removes every member of the xpromo family
 including the one inside a shadow root, unfreezes a scroll-locked page, unblurs
-the content behind the wall, catches an overlay injected after load, and leaves
-ordinary content alone.
+the content behind the wall, renders an adult-flagged post that the site
+withheld by slotting it nowhere, catches an overlay injected after load, and
+leaves ordinary content — and a spoiler blur — alone.
 
 What it cannot prove: that the fixture still matches Reddit. The element names
 came from community userscripts updated monthly, and Reddit rebuilds this app
@@ -31,7 +32,8 @@ import threading
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURE = os.path.join(ROOT, "tools", "fixture")
 JSDIR = os.path.join(ROOT, "build", "js")
-SCRIPTS = ("desktop_shim", "privacy_signals", "suppressor_style", "xpromo_suppressor")
+SCRIPTS = ("desktop_shim", "privacy_signals", "suppressor_style", "xpromo_suppressor",
+           "reveal_style", "adult_revealer", "diagnostics_flag", "reveal_report")
 
 PASS, FAIL = [], []
 
@@ -84,7 +86,8 @@ def main():
         # -------- default (mobile) context: no desktop shim, as shipped
         ctx = browser.new_context(viewport={"width": 412, "height": 915},
                                   device_scale_factor=2)
-        for name in ("privacy_signals", "suppressor_style", "xpromo_suppressor"):
+        for name in ("privacy_signals", "suppressor_style", "xpromo_suppressor",
+                     "reveal_style", "adult_revealer"):
             ctx.add_init_script(scripts[name])
         page = ctx.new_page()
         page.goto(base + "/r/privacy/", wait_until="load")
@@ -157,9 +160,14 @@ def main():
         check("spoilered text is unblurred",
               page.evaluate(
                   "getComputedStyle(document.getElementById('spoiler')).filter") in ("none", ""))
-        check("the blurred attribute is cleared",
+        # 1.6.0 no longer strips [blurred] from arbitrary elements — editing a
+        # live component's state is what emptied post pages. A plain blurred
+        # element is unblurred by the stylesheet instead, which changes nothing
+        # the site can read.
+        check("a plain blurred element is unblurred without touching its state",
               page.evaluate(
-                  "!document.getElementById('highlight').hasAttribute('blurred')"))
+                  "getComputedStyle(document.getElementById('highlight')).filter")
+              in ("none", ""))
         check("the scrim is gone", gone(page, ".bg-scrim"))
         check("the thumbnail shadow is gone", gone(page, ".thumbnail-shadow"))
 
@@ -237,15 +245,328 @@ def main():
 
         rp.evaluate("window.__activateExperience('nsfw')")
         rp.wait_for_timeout(400)
+        # 1.8.0 changed the contract here, and the captured markup is what
+        # forced it: the 18+ variant carries "Yes, I'm Over 18", whose handlers
+        # record the dismissal that makes Reddit send the post's media. So it is
+        # pressed first. Deleting it — what every earlier version did — is what
+        # left adult-flagged posts empty.
+        check("18+ wall: the confirmation is pressed, not deleted",
+              rp.evaluate("window.__over18Clicks") >= 1,
+              rp.evaluate("window.__over18Clicks"))
+        # In this fixture the press goes nowhere (no handlers, no reload), which
+        # is the case the retry cap exists for: give up and remove it.
+        rp.wait_for_timeout(2600)
         state = rp.evaluate("window.__pageInert()")
-        check("18+ wall: configured-xpromo-modal is removed",
+        check("18+ wall: a press that goes nowhere ends in removal",
               rp.evaluate("!document.querySelector('configured-xpromo-modal')"))
         check("18+ wall: no modal dialog remains open", state["openDialogs"] == 0, state)
         check("18+ wall: the page is interactive", state["hitIsLink"] and state["focusable"], state)
+        check("18+ wall: it stopped pressing rather than looping",
+              rp.evaluate("window.__over18Clicks") <= 2,
+              rp.evaluate("window.__over18Clicks"))
         check("18+ wall: the posts behind it survive",
               rp.evaluate("document.querySelectorAll('.post').length") == 3)
         check("the empty experience partial itself is left alone",
               rp.evaluate("!!document.querySelector('faceplate-partial[name^=\"ActivateExperience\"]')"))
+
+        # A context with everything the default install runs: both settings on.
+        rctx = browser.new_context(viewport={"width": 412, "height": 915})
+        for name in ("suppressor_style", "xpromo_suppressor", "reveal_style", "adult_revealer"):
+            rctx.add_init_script(scripts[name])
+
+        # ------------------------------------- un-gating adult-flagged content
+        # Two fixtures, because the last two versions each passed against one
+        # world and failed in the other: ../capture/ is the user's own markup
+        # with no component definitions, ../hydrate/ is a live component with a
+        # lazily-initialised player.
+        # ---------------------------------------- a deferred third-party embed
+        # The device's last report: the reveal worked, and inside it sat a
+        # <shreddit-embed> holding the provider's iframe markup in an attribute,
+        # rendering a "View in app" button instead. Content the server sent and
+        # the client declined to show.
+        print("\na deferred third-party embed")
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/embed/", wait_until="load")
+        pp.wait_for_timeout(300)
+        raw = pp.evaluate("window.__state()")
+        check("fixture: with no scripts nothing is revealed and no iframe exists",
+              raw["nagStillGated"] and not raw["nag"] and not raw["good"], raw)
+        pp.evaluate("document.querySelector('#frame-own shreddit-blurred-container').shadowRoot.querySelector('button').click()")
+        pp.wait_for_timeout(200)
+        strip = pp.evaluate("window.__state()")
+        # On the device the strip measured 150px (an iframe's intrinsic height);
+        # in this stub the wrapper has no in-flow content at all, so it is 0.
+        # Either way: far short of the frame.
+        check("fixture: with no scripts Reddit's own feed iframe is a strip, not the frame",
+              strip["ownIframeHeight"] <= 150 and strip["own"]["h"] > 250,
+              (strip["own"], strip["ownIframeHeight"]))
+        check("fixture: the feed frames start square, as Reddit sized them",
+              abs(raw["declared"]["ratio"] - 1.0) < 0.05 and abs(raw["placeholder"]["ratio"] - 1.0) < 0.05,
+              (raw["declared"], raw["placeholder"]))
+        plain.close()
+
+        ep = rctx.new_page()
+        ep.goto(base + "/r/embed/", wait_until="load")
+        ep.wait_for_timeout(4500)
+        st = ep.evaluate("window.__state()")
+        tb = [f for f in st["nag"] if f["tb"]]
+        check("the nagging embed gets an iframe made from Reddit's own src",
+              len(tb) == 1 and tb[0]["src"] == "https://provider.invalid/ifr/880431425030949422", st)
+        check("that iframe fills the frame", tb and tb[0]["h"] > 0, st)
+        check("the 'View in app' component is hidden, not removed", st["nagHidden"], st)
+        own = [f for f in st["good"] if f["own"]]
+        check("a well-behaved embed renders its own iframe", len(own) == 1, st)
+        check("and is not doubled up", len(st["good"]) == 1, st)
+
+        # The feed: Reddit sized the frame square for the placeholder; the
+        # media is 16:9. Left alone, the gif plays in half the box and the rest
+        # is black. The frame takes the media's shape, from the markup's own
+        # width/height when it has them, else from Reddit's preview image.
+        check("a landscape embed with declared dimensions reshapes its frame",
+              abs(st["declared"]["ratio"] - 1.78) < 0.06 and st["declared"]["iframeFills"], st["declared"])
+        check("one without them takes the preview image's shape instead",
+              abs(st["placeholder"]["ratio"] - 1.78) < 0.06 and st["placeholder"]["iframeFills"], st["placeholder"])
+
+        # The feed as reported: Reddit's own iframe, 150px tall in a 379px
+        # frame because its wrapper has no height. Nothing is hatched; the app
+        # gives the wrapper the frame's height and the frame the media's shape
+        # (a 9:16 placeholder, clamped by Reddit's own max-height).
+        check("Reddit's own feed iframe fills its frame instead of a 150px strip",
+              st["own"]["iframeFills"] and st["ownIframeHeight"] > 150, st["own"])
+        check("and the frame takes the portrait media's shape, within Reddit's clamp",
+              st["own"]["h"] > st["own"]["w"], st["own"])
+        check("nothing was hatched for it",
+              ep.evaluate("!document.querySelector('#frame-own [data-tb-embed]')"))
+
+        # ------------------------------------------- answering the 18+ wall
+        # The last piece, and the one that explains six versions of an empty
+        # post: Reddit withholds the media until the confirmation's mutation is
+        # recorded, and the app was deleting the confirmation.
+        print("\nthe 18+ confirmation")
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/agegate/", wait_until="load")
+        raw = pp.evaluate("(() => { window.__serveWall(); return window.__state(); })()")
+        check("fixture: the wall opens a modal dialog and fires nothing yet",
+              raw["openDialogs"] == 1 and raw["fired"]["cookie"] == 0, raw)
+        plain.close()
+
+        ap = rctx.new_page()
+        ap.goto(base + "/r/agegate/", wait_until="load")
+        ap.evaluate("window.__serveWall()")
+        ap.wait_for_timeout(600)
+        st = ap.evaluate("window.__state()")
+        check("the app presses Reddit's own confirmation", st["fired"]["cookie"] == 1, st)
+        check("which is what records the dismissal server-side",
+              st["fired"]["mutation"] == 1, st)
+        check("and Reddit's own reload runs", st["fired"]["reload"] == 1, st)
+        check("it was pressed, not deleted first", st["accepted"] == "1", st)
+
+        # A server that keeps serving the wall must not put the app in a reload
+        # loop: two presses, then it goes back to removing the thing.
+        ap.evaluate("window.__serveWall()")
+        ap.wait_for_timeout(600)
+        ap.evaluate("window.__serveWall()")
+        ap.wait_for_timeout(1200)
+        st = ap.evaluate("window.__state()")
+        check("pressing stops after two attempts", st["fired"]["cookie"] <= 2, st)
+        check("and the wall is removed instead once it has stopped",
+              st["openDialogs"] == 0, st)
+
+        # ------------------------------ removing a prompt must not remove a post
+        # The failure this guards: on device, the ONLY setting that changed
+        # anything was the prompt suppression, and against the captured page the
+        # suppressor removes nothing — so what it removes arrives at runtime.
+        # Whatever that element turns out to be, deleting a subtree that holds
+        # the post is never the right move.
+        print("\na prompt wrapped around the post")
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/wrapped/", wait_until="load")
+        raw = pp.evaluate("(() => { window.__activateWrapped(); return window.__state(); })()")
+        check("fixture: with no scripts the wall makes the page inert",
+              raw["openDialogs"] == 1 and not raw["pageUsable"], raw)
+        check("fixture: and the post is inside the thing the app deletes",
+              raw["containerPresent"] and raw["modalPresent"], raw)
+        plain.close()
+
+        wp = rctx.new_page()
+        wp.goto(base + "/r/wrapped/", wait_until="load")
+        wp.evaluate("window.__activateWrapped()")
+        wp.wait_for_timeout(5000)
+        st = wp.evaluate("window.__state()")
+        check("the wall's dialog is closed", st["openDialogs"] == 0, st)
+        check("the page is usable again", st["pageUsable"], st)
+        check("the post survived the prompt removal", st["containerPresent"], st)
+        check("and the stylesheet did not hide it either", st["modalHidden"] is False, st)
+        check("the media inside it is revealed", st["mediaHeight"] > 0, st)
+
+        print("\nthe diagnostics report")
+        dctx2 = browser.new_context(viewport={"width": 412, "height": 915})
+        for name in ("diagnostics_flag", "suppressor_style", "xpromo_suppressor",
+                     "reveal_style", "adult_revealer"):
+            dctx2.add_init_script(scripts[name])
+        dp2 = dctx2.new_page()
+        dp2.goto(base + "/r/capture/", wait_until="load")
+        dp2.wait_for_timeout(4500)
+        report = dp2.evaluate(scripts["reveal_report"])
+        check("the report is JSON and names the containers it found",
+              '"containersFound": 2' in report, report[:200])
+        check("the report says whether the component ever upgraded",
+              '"upgraded"' in report and '"presses"' in report, report[:200])
+        check("the report names which post it is describing",
+              '"mainPost"' in report and '"postsOnPage"' in report, report[:300])
+        # Without the flag the page must not be able to see the app at all.
+        quiet = rctx.new_page()
+        quiet.goto(base + "/r/capture/", wait_until="load")
+        quiet.wait_for_timeout(300)
+        check("no diagnostics flag means no global for a page to find",
+              quiet.evaluate("typeof window.__tbReveal") == "undefined")
+        dctx2.close()
+
+        print("\nthe reveal, against the user's captured markup (no definitions)")
+        cp = rctx.new_page()
+        cp.goto(base + "/r/capture/", wait_until="load")
+        cp.wait_for_timeout(4500)
+        st = cp.evaluate("window.__state()")
+        check("the captured post's media is slotted", st["assigned"], st)
+        check("the captured post's media is laid out", st["playerHeight"] > 0, st)
+        check("the captured post is not blurred", (st["filter"] or "none") in ("none", ""), st)
+        check("the captured post's state attributes are cleared", not st["gated"], st)
+        # The captured post's self-text is a single line, so this asserts it is
+        # laid out at all; the 88px clamp is covered by ../post/, whose body is
+        # long enough for the clamp to cut it.
+        check("the captured post's self-text is laid out", st["textHeight"] > 0, st)
+        check("the tap target is gone once the content is really there",
+              not st["buttonShown"], st)
+
+        # The control: no scripts, the same file. If this passes the fixture is
+        # not gating anything and everything above is vacuous.
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/capture/", wait_until="load")
+        pp.wait_for_timeout(200)
+        raw = pp.evaluate("window.__state()")
+        check("fixture: with no scripts the captured post stays withheld",
+              raw["gated"] and not raw["assigned"] and raw["playerHeight"] == 0, raw)
+        plain.close()
+
+        print("\nthe reveal, against a live component with lazy media")
+        # First the control, in a context with no scripts: clearing state before
+        # the definition arrives is what 1.4.0 and 1.5.0 did, and it must leave
+        # the player empty — otherwise this fixture cannot tell the versions
+        # apart and the assertions after it mean nothing.
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/hydrate/", wait_until="load")
+        pp.evaluate("window.__editStateEarly()")
+        pp.evaluate("window.__hydrate()")
+        pp.wait_for_timeout(300)
+        broken = pp.evaluate("window.__state()")
+        check("fixture: editing state before hydration leaves the media empty",
+              not broken["gated"] and broken["mediaHeight"] == 0, broken)
+        plain.close()
+
+        hp = rctx.new_page()
+        hp.goto(base + "/r/hydrate/", wait_until="load")
+        hp.wait_for_timeout(300)
+        hp.evaluate("window.__hydrate()")
+        hp.wait_for_timeout(1600)
+        st = hp.evaluate("window.__state()")
+        check("the live component's media is actually loaded", st["mediaHeight"] > 0, st)
+        check("the live component is no longer gated", not st["gated"], st)
+        check("the self-text is revealed too", st["textHeight"] > 0, st)
+        check("the tap target is taken away only after that",
+              not st["buttonShown"], st)
+        check("a spoiler is still blurred", st["spoilerBlurred"], st)
+
+        # And the promise that matters when the diagnosis is wrong: if nothing
+        # the app does produces content, the reader gets Reddit's own button
+        # back rather than a dead box.
+        print("\nwhen the reveal cannot work at all")
+        sp = rctx.new_page()
+        sp.goto(base + "/r/stubborn/", wait_until="load")
+        sp.wait_for_timeout(7000)
+        st = sp.evaluate("window.__state()")
+        check("a container that never yields keeps its button",
+              st["buttonShown"], st)
+        check("and gets its blurred placeholder back, not an empty frame",
+              st["slotName"] == "blurred" and st["placeholderHeight"] > 0, st)
+
+        # --------------------------------- the blur that withholds, not covers
+        # The bug this section exists for: every assertion above could pass and
+        # a post still open empty. In mode="slot" the container renders
+        # <slot name="blurred">, so the real post is in the document assigned
+        # to no slot — not blurred, not rendered. The fixture carries no
+        # component definitions, which is the case the app cannot rule out on
+        # device: server-rendered markup that has not hydrated, where removing
+        # an attribute makes nothing happen.
+        print("\nthe post page: content behind the adult flag (captured DOM)")
+        plain = browser.new_context(viewport={"width": 412, "height": 915})
+        pp = plain.new_page()
+        pp.goto(base + "/r/post/", wait_until="load")
+        pp.wait_for_timeout(150)
+        before = pp.evaluate("window.__mediaState()")
+        check("fixture: with no suppressor the post media is withheld entirely",
+              before["present"] and not before["assigned"] and before["height"] == 0, before)
+        tbefore = pp.evaluate("window.__textState()")
+        check("fixture: with no suppressor the self-text is blurred",
+              "blur" in (tbefore["filter"] or ""), tbefore)
+        check("fixture: with no suppressor the button is what the finger lands on",
+              before["hostTopmost"] == "reveal-button", before)
+        plain.close()
+
+        op = ctx.new_page()
+        op.goto(base + "/r/post/", wait_until="load")
+        op.wait_for_timeout(4500)
+        m = op.evaluate("window.__mediaState()")
+        check("the post media is assigned to the rendered slot", m["assigned"], m)
+        check("the post media occupies the page", m["height"] > 0, m)
+        check("the post media is not blurred", (m["filter"] or "none") in ("none", ""), m)
+        check("the post media is what the finger lands on, not the button",
+              m["topmost"] == "post-media", m)
+        check("the host's obscured attributes are cleared", not m["hostBlurred"], m)
+        t = op.evaluate("window.__textState()")
+        check("the self-text is unblurred", (t["filter"] or "none") in ("none", ""), t)
+        check("the self-text is not left clipped to the placeholder's 88px",
+              t["height"] > 88, t)
+        s = op.evaluate("window.__spoilerState()")
+        check("a spoiler blur is left alone — it is not the age gate",
+              "blur" in (s["filter"] or ""), s)
+        check("a spoiler container keeps its state attribute", s["hostBlurred"], s)
+        check("the comments below are untouched",
+              op.evaluate("!!document.getElementById('comment-1')"))
+
+        # A container that arrives on an SPA route change, with no definition.
+        op.evaluate("window.__injectLateBlurred()")
+        op.wait_for_timeout(4000)
+        check("a container injected after load is revealed too",
+              op.evaluate(
+                  """(() => { const el = document.getElementById('late-media');
+                      return !!el && !!el.closest('[slot]').assignedSlot; })()"""))
+
+        # And the other half: the definition arrives late and re-renders from
+        # its own attributes. The end state has to be revealed either way —
+        # if it reacts, because the attributes are gone; if it does not, because
+        # the shadow tree was patched.
+        hp = ctx.new_page()
+        hp.goto(base + "/r/post/", wait_until="load")
+        hp.wait_for_timeout(300)
+        # This stub's button has no handler, so pressing it does nothing — the
+        # "asked nicely and got nowhere" path, which must still end revealed.
+        hp.evaluate("window.__defineHydrating()")
+        hp.wait_for_timeout(6000)
+        hm = hp.evaluate("window.__mediaState()")
+        check("after the component hydrates the media stays revealed",
+              hm["assigned"] and hm["height"] > 0, hm)
+        ht = hp.evaluate("window.__textState()")
+        check("after the component hydrates the self-text stays unblurred",
+              (ht["filter"] or "none") in ("none", ""), ht)
+        hs = hp.evaluate("window.__spoilerState()")
+        check("after hydration a spoiler is still blurred",
+              "blur" in (hs["filter"] or ""), hs)
+
 
         if args.shots:
             os.makedirs(args.shots, exist_ok=True)
@@ -256,6 +577,13 @@ def main():
             rp = raw.new_page()
             rp.goto(base + "/r/privacy/", wait_until="load")
             rp.screenshot(path=os.path.join(args.shots, "unsuppressed.png"))
+            # The post page, which is the pair worth looking at: the same
+            # fixture with and without the scripts.
+            rp2 = raw.new_page()
+            rp2.goto(base + "/r/post/", wait_until="load")
+            rp2.wait_for_timeout(200)
+            rp2.screenshot(path=os.path.join(args.shots, "post-blocked.png"))
+            op.screenshot(path=os.path.join(args.shots, "post-revealed.png"))
             print("\nscreenshots in %s" % args.shots)
 
         # -------- desktop mode: the escape hatch still shims client hints

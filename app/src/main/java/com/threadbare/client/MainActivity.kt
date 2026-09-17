@@ -10,6 +10,7 @@ import android.webkit.WebView
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,6 +21,7 @@ import com.threadbare.client.shell.Frame
 import com.threadbare.client.shell.TopBar
 import com.threadbare.client.ui.SettingsActivity
 import com.threadbare.client.util.Prefs
+import com.threadbare.client.util.RefusalLog
 import com.threadbare.client.util.Safely
 import com.threadbare.client.util.SavedItem
 import com.threadbare.client.util.SavedKind
@@ -35,7 +37,9 @@ import com.threadbare.client.web.AppWebViewClient
 import com.threadbare.client.web.PrivacySignals
 import com.threadbare.client.web.UrlRules
 import com.threadbare.client.web.WebHost
+import com.threadbare.client.web.SiteScripts
 import com.threadbare.client.web.WebViewSetup
+import org.json.JSONTokener
 
 class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
 
@@ -44,6 +48,22 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
     private lateinit var progress: ProgressBar
     private lateinit var topBar: TopBar
     private lateinit var frame: Frame
+
+    /** Held between reading the page and the user picking where to save it. */
+    private var pendingDump: String? = null
+
+    private val saveDump = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/html"),
+    ) { uri ->
+        val html = pendingDump
+        pendingDump = null
+        if (uri == null || html == null) return@registerForActivityResult
+        val ok = Safely.call({
+            contentResolver.openOutputStream(uri)?.use { it.write(html.toByteArray()) }
+            true
+        }, false) ?: false
+        toast(getString(if (ok) R.string.dump_saved else R.string.dump_failed))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -297,6 +317,75 @@ class MainActivity : AppCompatActivity(), WebHost, TopBar.Callbacks {
             dialog.dismiss(); copyLink(url)
         }
         dialog.show()
+    }
+
+    // ----------------------------------------------------------- diagnostics
+
+    /**
+     * What the app thinks the adult-content gate is doing on this page.
+     *
+     * Three releases were spent inferring this from a DOM captured in a
+     * browser, which turned out not to be the page the app has. Reading it out
+     * of the WebView takes a second and settles the question — is there a
+     * blurred container at all, did its component upgrade, was its button
+     * pressed, and is there anything in the media frame.
+     *
+     * `evaluateJavascript` is a callback into Kotlin, not a bridge: it adds
+     * nothing the page can call. The app still has no `@JavascriptInterface`.
+     */
+    override fun onRevealReport() {
+        Safely.run {
+            web.evaluateJavascript(SiteScripts.REVEAL_REPORT) { raw ->
+                // The page's own account, plus what never reached it. The
+                // second half is the one the DOM cannot tell you.
+                val text = (decodeJsString(raw) ?: raw.orEmpty()) +
+                    "\n\nrefused by this app on this page:\n" + RefusalLog.asJson()
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.report_title)
+                    .setMessage(text)
+                    .setPositiveButton(R.string.report_copy) { _, _ ->
+                        if (BrowserLauncher.copyToClipboard(this, text)) {
+                            toast(getString(R.string.report_copied))
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }
+    }
+
+    /**
+     * The page itself, shadow roots and all, saved wherever the user chooses.
+     *
+     * `outerHTML` would not do — it omits shadow roots, and the whole adult
+     * gate lives in one. Session identifiers are scrubbed in the page before
+     * the string crosses into Kotlin, because this file exists to be sent to
+     * somebody.
+     */
+    override fun onSavePage() {
+        Safely.run {
+            web.evaluateJavascript(SiteScripts.PAGE_DUMP) { raw ->
+                val html = decodeJsString(raw)
+                if (html.isNullOrEmpty()) {
+                    toast(getString(R.string.dump_failed))
+                    return@evaluateJavascript
+                }
+                pendingDump = html
+                val ok = Safely.call({
+                    saveDump.launch(getString(R.string.dump_name)); true
+                }, false) ?: false
+                if (!ok) {
+                    pendingDump = null
+                    toast(getString(R.string.dump_failed))
+                }
+            }
+        }
+    }
+
+    /** `evaluateJavascript` hands back a JSON value, not the string itself. */
+    private fun decodeJsString(raw: String?): String? {
+        if (raw == null || raw == "null") return null
+        return Safely.call({ JSONTokener(raw).nextValue() as? String }, null) ?: raw
     }
 
     private fun copyLink(url: String) {

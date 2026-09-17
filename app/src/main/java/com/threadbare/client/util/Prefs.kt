@@ -42,7 +42,7 @@ object Prefs {
      * returns early on every existing install and the new preference is absent
      * rather than defaulted. That is the 1.0.0 bug in its other form.
      */
-    const val SCHEMA_VERSION = 4
+    const val SCHEMA_VERSION = 6
     private const val KEY_SCHEMA = "schema_version"
 
     /** Keys that existed in 1.0.0 and no longer mean anything. */
@@ -58,6 +58,8 @@ object Prefs {
     const val KEY_OPEN_EXTERNAL = "open_external_in_browser"
     const val KEY_PRIVATE_TAB = "private_tab_mode"
     const val KEY_LINK_BROWSER = "link_browser"
+    const val KEY_REVEAL_ADULT = "reveal_adult_content"
+    const val KEY_DIAGNOSTICS = "diagnostics"
 
     const val DEFAULT_START_PAGE = "https://www.reddit.com/"
 
@@ -107,6 +109,16 @@ object Prefs {
             if (!p.contains(KEY_LINK_BROWSER)) {
                 putString(KEY_LINK_BROWSER, BrowserChoice.SYSTEM_DEFAULT)
             }
+            // Schema 5. Until 1.5.0 this behaviour was part of
+            // KEY_SUPPRESS_XPROMO, so an install that had switched that off to
+            // get its post pages back must not have revealing switched on
+            // underneath it: inherit the value rather than defaulting to true.
+            if (!p.contains(KEY_REVEAL_ADULT)) {
+                putBoolean(KEY_REVEAL_ADULT, p.getBoolean(KEY_SUPPRESS_XPROMO, true))
+            }
+            // Schema 6. Off, and only ever on because someone asked for it:
+            // it puts a global on the page and opens the WebView to a debugger.
+            if (!p.contains(KEY_DIAGNOSTICS)) putBoolean(KEY_DIAGNOSTICS, false)
             putInt(KEY_SCHEMA, SCHEMA_VERSION)
         }.apply()
     }
@@ -142,6 +154,26 @@ object Prefs {
     }
 
     /** Layers 2 and 3: the stylesheet and the observer. */
+    /**
+     * The current value of a set of boolean keys, for [RestartGate].
+     *
+     * Taken once at launch and compared against later, so the app can say
+     * whether what the reader is looking at still matches what the settings
+     * screen claims.
+     */
+    fun snapshot(context: Context, keys: List<String>): Map<String, Boolean> {
+        val p = of(context)
+        val out = LinkedHashMap<String, Boolean>(keys.size)
+        for (key in keys) out[key] = p.getBoolean(key, true)
+        return out
+    }
+
+    fun diagnostics(context: Context): Boolean =
+        of(context).getBoolean(KEY_DIAGNOSTICS, false)
+
+    fun revealAdultContent(context: Context): Boolean =
+        of(context).getBoolean(KEY_REVEAL_ADULT, true)
+
     fun suppressXpromo(context: Context): Boolean =
         of(context).getBoolean(KEY_SUPPRESS_XPROMO, true)
 

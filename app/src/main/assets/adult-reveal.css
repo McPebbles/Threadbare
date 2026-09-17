@@ -1,0 +1,44 @@
+/*
+ * Threadbare — adult-content reveal stylesheet.
+ *
+ * Injected only when `Show adult content without tapping through` is on, and
+ * kept apart from the prompt-suppression sheet on purpose: one removes Reddit's
+ * nagging, the other changes what the reader is shown, and after 1.4.0 and
+ * 1.5.0 both shipped a post page that opened blank, those two want separate
+ * switches.
+ *
+ * WHAT IS SAFE TO DO FROM CSS, AND WHAT IS NOT
+ *
+ * Safe: clearing a filter on an ordinary element. A feed thumbnail blurred with
+ * `filter: blur()` is just an element with a filter on it; unblurring it takes
+ * nothing away from the page and races with nothing.
+ *
+ * Not safe, and not attempted here: `<shreddit-blurred-container>`. Its blur is
+ * a shadow root that renders a different `<slot>`, which a stylesheet can
+ * neither see nor change, and whose state must not be edited before Reddit's
+ * own component has upgraded. That is `ADULT_REVEALER`'s job, and it does it by
+ * pressing the component's own button rather than by reaching in.
+ */
+
+.thumbnail-blur,
+img.blurred,
+video.blur,
+[blurred],
+[data-blurred="true"] {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/*
+ * Covers over a thumbnail, in the light DOM. The identically-named elements
+ * INSIDE a blurred container's shadow root are not reachable from here and are
+ * handled — after a successful reveal, never before — by the revealer.
+ */
+.thumbnail-shadow,
+.bg-scrim {
+  display: none !important;
+}
+
+.bg-media-background {
+  background: transparent !important;
+}
